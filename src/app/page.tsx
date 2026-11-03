@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   UploadCloud,
   FileText,
@@ -11,23 +12,176 @@ import {
   ArrowRight,
   CheckCircle2,
   Info,
+  Loader2,
 } from "lucide-react";
 import PaperCard from "@/components/PaperCard";
 import NotarySeal from "@/components/NotarySeal";
 import HeroDemoStrip from "@/components/HeroDemoStrip";
 import HowItWorks from "@/components/HowItWorks";
 import TrustRow from "@/components/TrustRow";
+import { shrinkImage, runClientOcr } from "@/lib/ocr";
 
 type TabType = "file" | "paste" | "link" | "compare";
 
 export default function HomePage() {
+  const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [activeTab, setActiveTab] = useState<TabType>("file");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingStatus, setProcessingStatus] = useState<string>("");
+  const [pastedText, setPastedText] = useState("");
+  const [linkUrl, setLinkUrl] = useState("");
 
   const showToast = (message: string) => {
     setToastMessage(message);
-    setTimeout(() => setToastMessage(null), 3000);
+    setTimeout(() => setToastMessage(null), 4000);
+  };
+
+  const handleFileUpload = async (file: File) => {
+    setIsProcessing(true);
+    setProcessingStatus(`Reading ${file.name}...`);
+
+    try {
+      const lower = file.name.toLowerCase();
+      const isImage =
+        file.type.startsWith("image/") ||
+        lower.endsWith(".png") ||
+        lower.endsWith(".jpg") ||
+        lower.endsWith(".jpeg");
+
+      if (isImage) {
+        // Client OCR flow
+        setProcessingStatus("Optimizing image resolution...");
+        const { dataUrl } = await shrinkImage(file, 1600, 0.8);
+
+        setProcessingStatus("Running client OCR (English)...");
+        const ocrText = await runClientOcr(dataUrl, (percent, status) => {
+          setProcessingStatus(`OCR ${status}: ${percent}%`);
+        });
+
+        if (!ocrText || !ocrText.trim()) {
+          throw new Error("No readable text detected in photo");
+        }
+
+        setProcessingStatus("Verifying extracted text...");
+        const res = await fetch("/api/read", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: ocrText,
+            fileName: file.name,
+            sourceType: "photo",
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to process photo");
+
+        sessionStorage.setItem("signsafe_doc", JSON.stringify(data.signDoc));
+        router.push("/scan");
+      } else {
+        // Standard Document Upload (.docx, .pdf, .txt, .md)
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const res = await fetch("/api/read", {
+          method: "POST",
+          body: formData,
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to process document");
+
+        sessionStorage.setItem("signsafe_doc", JSON.stringify(data.signDoc));
+        router.push("/scan");
+      }
+    } catch (err: any) {
+      showToast(err.message || "An error occurred while reading file");
+    } finally {
+      setIsProcessing(false);
+      setProcessingStatus("");
+    }
+  };
+
+  const handlePastedText = async () => {
+    if (!pastedText.trim()) {
+      showToast("Please enter or paste document text");
+      return;
+    }
+
+    setIsProcessing(true);
+    setProcessingStatus("Processing pasted text...");
+
+    try {
+      const res = await fetch("/api/read", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: pastedText,
+          sourceType: "paste",
+          fileName: "pasted-document.txt",
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to process text");
+
+      sessionStorage.setItem("signsafe_doc", JSON.stringify(data.signDoc));
+      router.push("/scan");
+    } catch (err: any) {
+      showToast(err.message || "Failed to process text");
+    } finally {
+      setIsProcessing(false);
+      setProcessingStatus("");
+    }
+  };
+
+  const handleLinkFetch = async () => {
+    if (!linkUrl.trim()) {
+      showToast("Please enter a web URL to check");
+      return;
+    }
+
+    setIsProcessing(true);
+    setProcessingStatus("Checking link with SSRF firewall...");
+
+    try {
+      const res = await fetch("/api/read-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: linkUrl.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "This link can't be checked");
+      }
+
+      sessionStorage.setItem("signsafe_doc", JSON.stringify(data.signDoc));
+      router.push("/scan");
+    } catch (err: any) {
+      showToast(err.message || "This link can't be checked");
+    } finally {
+      setIsProcessing(false);
+      setProcessingStatus("");
+    }
+  };
+
+  const handleLoadSample = async (samplePath: string, fileName: string) => {
+    setIsProcessing(true);
+    setProcessingStatus(`Loading sample ${fileName}...`);
+
+    try {
+      const res = await fetch(samplePath);
+      if (!res.ok) throw new Error("Could not load sample file");
+      const blob = await res.blob();
+      const file = new File([blob], fileName, { type: blob.type });
+
+      await handleFileUpload(file);
+    } catch (err: any) {
+      showToast(err.message || "Failed to load sample");
+      setIsProcessing(false);
+      setProcessingStatus("");
+    }
   };
 
   const tabs = [
@@ -39,12 +193,25 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen flex flex-col justify-between selection:bg-[#E8A33D]/25 bg-[#FBF8F1] text-[#14213D] font-sans">
+      {/* Hidden File Input Picker */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".pdf,.docx,.docm,.doc,.txt,.md,image/*"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) handleFileUpload(file);
+          e.target.value = "";
+        }}
+      />
+
       {/* Toast Alert */}
       {toastMessage && (
         <div
           role="status"
           aria-live="polite"
-          className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 bg-[#14213D] text-[#FBF8F1] px-5 py-3 rounded-xl shadow-xl text-sm font-medium transition-all duration-300 animate-fadeIn"
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 bg-[#14213D] text-[#FBF8F1] px-5 py-3 rounded-xl shadow-xl text-sm font-medium transition-all duration-300 animate-fadeIn border border-[#E8A33D]/30 max-w-md"
         >
           <Info className="w-4 h-4 text-[#E8A33D] flex-shrink-0" />
           <span>{toastMessage}</span>
@@ -69,7 +236,6 @@ export default function HomePage() {
 
           {/* Header Actions */}
           <div className="flex items-center gap-2 sm:gap-4">
-            {/* Top Right Judge Mode Button */}
             <button
               onClick={() => showToast("Judge Mode replay fixtures load in Phase 10")}
               className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg border border-[#14213D]/20 bg-white/80 hover:bg-white text-xs sm:text-sm font-semibold text-[#14213D] transition-all shadow-2xs hover:shadow-xs active:scale-[0.98]"
@@ -79,7 +245,6 @@ export default function HomePage() {
               <span className="sm:hidden">Judge Mode</span>
             </button>
 
-            {/* Not Legal Advice Badge */}
             <div className="hidden md:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#14213D]/5 border border-[#14213D]/10 text-xs text-[#14213D]/75 font-mono">
               <span className="w-1.5 h-1.5 rounded-full bg-[#2FA36B]" />
               Not legal advice
@@ -138,141 +303,160 @@ export default function HomePage() {
               <div className="legal-pad-margin" aria-hidden="true" />
 
               <div className="relative z-10 pl-5 sm:pl-10">
-                {activeTab === "file" && (
-                  <div
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      setIsDragging(true);
-                    }}
-                    onDragLeave={() => setIsDragging(false)}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      setIsDragging(false);
-                      showToast("Document ingestion engine connected (Phase 3)");
-                    }}
-                    className={`border-2 border-dashed rounded-xl p-6 sm:p-10 text-center transition-all ${
-                      isDragging
-                        ? "border-[#2FA36B] bg-[#2FA36B]/5 scale-[0.99]"
-                        : "border-[#14213D]/20 bg-[#FFFFFF]/80 hover:bg-[#FFFFFF]"
-                    }`}
-                  >
-                    <div className="w-12 h-12 sm:w-14 sm:h-14 mx-auto mb-3 rounded-full bg-[#14213D]/5 flex items-center justify-center text-[#14213D]/70">
-                      <UploadCloud className="w-6 h-6 sm:w-7 sm:h-7" />
-                    </div>
-                    <p className="font-serif text-lg sm:text-xl font-semibold text-[#14213D]">
-                      Drag and drop your document here
+                {isProcessing ? (
+                  <div className="p-10 text-center space-y-3">
+                    <Loader2 className="w-8 h-8 text-[#E8A33D] animate-spin mx-auto" />
+                    <p className="font-serif text-lg font-bold text-[#14213D]">
+                      {processingStatus || "Analyzing document..."}
                     </p>
-                    <p className="mt-1.5 text-xs sm:text-sm text-[#14213D]/65">
-                      Accepts PDF, Word (.docx), plain text, or contract photos (up to 3 MB)
+                    <p className="text-xs text-stone-500">
+                      Extracting text, hidden elements, metadata, and scripts in memory
                     </p>
-
-                    {/* Big Navy Primary Action Button */}
-                    <button
-                      onClick={() => showToast("File picker connected (Phase 3)")}
-                      className="mt-5 w-full sm:w-auto px-8 py-3.5 sm:py-4 bg-[#14213D] hover:bg-[#1f3158] text-[#FBF8F1] text-base sm:text-[17px] font-semibold rounded-xl shadow-md hover:shadow-lg transition-all duration-200 inline-flex items-center justify-center gap-2.5 active:scale-[0.98] cursor-pointer"
-                    >
-                      <UploadCloud className="w-5 h-5" />
-                      <span>Check a document</span>
-                    </button>
                   </div>
-                )}
-
-                {activeTab === "paste" && (
-                  <div className="space-y-3">
-                    <label
-                      htmlFor="paste-textarea"
-                      className="block text-xs font-mono font-semibold uppercase text-[#14213D]/70"
-                    >
-                      Paste document text or clauses:
-                    </label>
-                    <textarea
-                      id="paste-textarea"
-                      rows={6}
-                      placeholder="Paste contract clauses, terms, or email commitments here..."
-                      className="w-full p-4 rounded-xl bg-[#FFFFFF]/90 border border-[#14213D]/20 focus:border-[#14213D] focus:ring-1 focus:ring-[#14213D] text-sm text-[#14213D] placeholder-[#14213D]/40 resize-none font-sans"
-                    />
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pt-1">
-                      <span className="text-xs text-[#14213D]/60 font-mono">
-                        Max 200,000 characters
-                      </span>
-                      <button
-                        onClick={() => showToast("Scanning will run in Phase 3/4")}
-                        className="w-full sm:w-auto px-7 py-3 rounded-xl bg-[#14213D] hover:bg-[#1f3158] text-[#FBF8F1] text-sm font-semibold transition-all shadow-sm"
+                ) : (
+                  <>
+                    {activeTab === "file" && (
+                      <div
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          setIsDragging(true);
+                        }}
+                        onDragLeave={() => setIsDragging(false)}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          setIsDragging(false);
+                          const droppedFile = e.dataTransfer.files?.[0];
+                          if (droppedFile) handleFileUpload(droppedFile);
+                        }}
+                        className={`border-2 border-dashed rounded-xl p-6 sm:p-10 text-center transition-all ${
+                          isDragging
+                            ? "border-[#2FA36B] bg-[#2FA36B]/5 scale-[0.99]"
+                            : "border-[#14213D]/20 bg-[#FFFFFF]/80 hover:bg-[#FFFFFF]"
+                        }`}
                       >
-                        Check Text
-                      </button>
-                    </div>
-                  </div>
-                )}
+                        <div className="w-12 h-12 sm:w-14 sm:h-14 mx-auto mb-3 rounded-full bg-[#14213D]/5 flex items-center justify-center text-[#14213D]/70">
+                          <UploadCloud className="w-6 h-6 sm:w-7 sm:h-7" />
+                        </div>
+                        <p className="font-serif text-lg sm:text-xl font-semibold text-[#14213D]">
+                          Drag and drop your document here
+                        </p>
+                        <p className="mt-1.5 text-xs sm:text-sm text-[#14213D]/65">
+                          Accepts PDF, Word (.docx), plain text, or contract photos (up to 3 MB)
+                        </p>
 
-                {activeTab === "link" && (
-                  <div className="space-y-4">
-                    <label
-                      htmlFor="link-input"
-                      className="block text-xs font-mono font-semibold uppercase text-[#14213D]/70"
-                    >
-                      Paste a contract or terms URL:
-                    </label>
-                    <div className="flex flex-col sm:flex-row gap-2.5">
-                      <input
-                        id="link-input"
-                        type="url"
-                        placeholder="https://example.com/terms-and-conditions"
-                        className="flex-1 p-3.5 rounded-xl bg-[#FFFFFF]/90 border border-[#14213D]/20 focus:border-[#14213D] focus:ring-1 focus:ring-[#14213D] text-sm text-[#14213D] placeholder-[#14213D]/40 font-mono"
-                      />
-                      <button
-                        onClick={() => showToast("Link fetcher runs in Phase 3")}
-                        className="px-6 py-3.5 rounded-xl bg-[#14213D] hover:bg-[#1f3158] text-[#FBF8F1] text-sm font-semibold transition-all shadow-sm whitespace-nowrap"
-                      >
-                        Fetch & Check
-                      </button>
-                    </div>
-                    <p className="text-xs text-[#14213D]/65 flex items-center gap-1.5">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-[#2FA36B]" />
-                      Protected by SSRF firewall
-                    </p>
-                  </div>
-                )}
-
-                {activeTab === "compare" && (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <span className="block text-xs font-mono font-semibold uppercase text-[#14213D]/70 mb-1.5">
-                          Version 1 (Initial / Original)
-                        </span>
-                        <div
-                          onClick={() => showToast("Version 1 selector ready in Phase 9")}
-                          className="border border-dashed border-[#14213D]/25 rounded-xl p-5 bg-[#FFFFFF]/80 text-center cursor-pointer hover:bg-[#FFFFFF]"
+                        {/* Primary Action Button */}
+                        <button
+                          onClick={() => fileInputRef.current?.click()}
+                          className="mt-5 w-full sm:w-auto px-8 py-3.5 sm:py-4 bg-[#14213D] hover:bg-[#1f3158] text-[#FBF8F1] text-base sm:text-[17px] font-semibold rounded-xl shadow-md hover:shadow-lg transition-all duration-200 inline-flex items-center justify-center gap-2.5 active:scale-[0.98] cursor-pointer"
                         >
-                          <FileText className="w-5 h-5 mx-auto text-[#14213D]/50 mb-1" />
-                          <span className="text-xs text-[#14213D]/75 font-medium">
-                            Select or paste Version 1
+                          <UploadCloud className="w-5 h-5" />
+                          <span>Check a document</span>
+                        </button>
+                      </div>
+                    )}
+
+                    {activeTab === "paste" && (
+                      <div className="space-y-3">
+                        <label
+                          htmlFor="paste-textarea"
+                          className="block text-xs font-mono font-semibold uppercase text-[#14213D]/70"
+                        >
+                          Paste document text or clauses:
+                        </label>
+                        <textarea
+                          id="paste-textarea"
+                          rows={6}
+                          value={pastedText}
+                          onChange={(e) => setPastedText(e.target.value)}
+                          placeholder="Paste contract clauses, terms, or email commitments here..."
+                          className="w-full p-4 rounded-xl bg-[#FFFFFF]/90 border border-[#14213D]/20 focus:border-[#14213D] focus:ring-1 focus:ring-[#14213D] text-sm text-[#14213D] placeholder-[#14213D]/40 resize-none font-sans"
+                        />
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pt-1">
+                          <span className="text-xs text-[#14213D]/60 font-mono">
+                            Max 200,000 characters
                           </span>
+                          <button
+                            onClick={handlePastedText}
+                            className="w-full sm:w-auto px-7 py-3 rounded-xl bg-[#14213D] hover:bg-[#1f3158] text-[#FBF8F1] text-sm font-semibold transition-all shadow-sm"
+                          >
+                            Check Text
+                          </button>
                         </div>
                       </div>
-                      <div>
-                        <span className="block text-xs font-mono font-semibold uppercase text-[#14213D]/70 mb-1.5">
-                          Version 2 (New / Revised)
-                        </span>
-                        <div
-                          onClick={() => showToast("Version 2 selector ready in Phase 9")}
-                          className="border border-dashed border-[#14213D]/25 rounded-xl p-5 bg-[#FFFFFF]/80 text-center cursor-pointer hover:bg-[#FFFFFF]"
+                    )}
+
+                    {activeTab === "link" && (
+                      <div className="space-y-4">
+                        <label
+                          htmlFor="link-input"
+                          className="block text-xs font-mono font-semibold uppercase text-[#14213D]/70"
                         >
-                          <FileText className="w-5 h-5 mx-auto text-[#14213D]/50 mb-1" />
-                          <span className="text-xs text-[#14213D]/75 font-medium">
-                            Select or paste Version 2
-                          </span>
+                          Paste a contract or terms URL:
+                        </label>
+                        <div className="flex flex-col sm:flex-row gap-2.5">
+                          <input
+                            id="link-input"
+                            type="url"
+                            value={linkUrl}
+                            onChange={(e) => setLinkUrl(e.target.value)}
+                            placeholder="https://example.com/terms"
+                            className="flex-1 p-3.5 rounded-xl bg-[#FFFFFF]/90 border border-[#14213D]/20 focus:border-[#14213D] focus:ring-1 focus:ring-[#14213D] text-sm text-[#14213D] placeholder-[#14213D]/40 font-mono"
+                          />
+                          <button
+                            onClick={handleLinkFetch}
+                            className="px-6 py-3.5 rounded-xl bg-[#14213D] hover:bg-[#1f3158] text-[#FBF8F1] text-sm font-semibold transition-all shadow-sm whitespace-nowrap"
+                          >
+                            Fetch & Check
+                          </button>
                         </div>
+                        <p className="text-xs text-[#14213D]/65 flex items-center gap-1.5">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-[#2FA36B]" />
+                          Protected by SSRF firewall (internal and metadata IPs blocked)
+                        </p>
                       </div>
-                    </div>
-                    <button
-                      onClick={() => showToast("Compare engine runs in Phase 9")}
-                      className="w-full py-3.5 rounded-xl bg-[#14213D] hover:bg-[#1f3158] text-[#FBF8F1] text-sm font-semibold transition-all shadow-sm"
-                    >
-                      Compare Meaning Changes
-                    </button>
-                  </div>
+                    )}
+
+                    {activeTab === "compare" && (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <span className="block text-xs font-mono font-semibold uppercase text-[#14213D]/70 mb-1.5">
+                              Version 1 (Initial / Original)
+                            </span>
+                            <div
+                              onClick={() => showToast("Version 1 selector ready in Phase 9")}
+                              className="border border-dashed border-[#14213D]/25 rounded-xl p-5 bg-[#FFFFFF]/80 text-center cursor-pointer hover:bg-[#FFFFFF]"
+                            >
+                              <FileText className="w-5 h-5 mx-auto text-[#14213D]/50 mb-1" />
+                              <span className="text-xs text-[#14213D]/75 font-medium">
+                                Select or paste Version 1
+                              </span>
+                            </div>
+                          </div>
+                          <div>
+                            <span className="block text-xs font-mono font-semibold uppercase text-[#14213D]/70 mb-1.5">
+                              Version 2 (New / Revised)
+                            </span>
+                            <div
+                              onClick={() => showToast("Version 2 selector ready in Phase 9")}
+                              className="border border-dashed border-[#14213D]/25 rounded-xl p-5 bg-[#FFFFFF]/80 text-center cursor-pointer hover:bg-[#FFFFFF]"
+                            >
+                              <FileText className="w-5 h-5 mx-auto text-[#14213D]/50 mb-1" />
+                              <span className="text-xs text-[#14213D]/75 font-medium">
+                                Select or paste Version 2
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => showToast("Compare engine runs in Phase 9")}
+                          className="w-full py-3.5 rounded-xl bg-[#14213D] hover:bg-[#1f3158] text-[#FBF8F1] text-sm font-semibold transition-all shadow-sm"
+                        >
+                          Compare Meaning Changes
+                        </button>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -307,7 +491,10 @@ export default function HomePage() {
                 colorTab="red"
                 tabLabel="High Risk • 6 Tells"
                 onClick={() =>
-                  showToast("Sample 1 will execute via Judge Mode / Scan in Phase 3-5")
+                  handleLoadSample(
+                    "/samples/01_remote_job_offer.docx",
+                    "01_remote_job_offer.docx"
+                  )
                 }
                 className="h-full flex flex-col justify-between"
               >
@@ -338,7 +525,12 @@ export default function HomePage() {
                 foldedCorner={true}
                 colorTab="amber"
                 tabLabel="Caution • Chat Conflict"
-                onClick={() => showToast("Sample 2 will execute in Phase 3-8")}
+                onClick={() =>
+                  handleLoadSample(
+                    "/samples/02_freelance_design_contract.md",
+                    "02_freelance_design_contract.md"
+                  )
+                }
                 className="h-full flex flex-col justify-between"
               >
                 <div>
@@ -368,7 +560,12 @@ export default function HomePage() {
                 foldedCorner={true}
                 colorTab="navy"
                 tabLabel="Lease V1 vs V2"
-                onClick={() => showToast("Sample 3 will execute in Phase 9")}
+                onClick={() =>
+                  handleLoadSample(
+                    "/samples/04_tenancy_v1.md",
+                    "04_tenancy_v1.md"
+                  )
+                }
                 className="h-full flex flex-col justify-between"
               >
                 <div>
