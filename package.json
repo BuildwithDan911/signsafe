@@ -1,0 +1,35 @@
+{
+  "name": "signsafe",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build --webpack",
+    "start": "next start",
+    "lint": "eslint",
+    "check-secrets": "node scripts/check-secrets.mjs",
+    "prepare": "simple-git-hooks"
+  },
+  "dependencies": {
+    "lucide-react": "^1.67.0",
+    "next": "16.4.4",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.4",
+    "@tailwindcss/turbopack": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.4.4",
+    "postcss": "^8.5.32",
+    "simple-git-hooks": "^2.14.0",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "npm run check-secrets"
+  }
+}
