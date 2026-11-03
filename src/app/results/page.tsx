@@ -1037,7 +1037,7 @@ Signed for the Client: Daniel Price, Creative Director`;
     totalCredits = 0,
   } = audit;
 
-  const effectiveScoreResult: ScoreResult = React.useMemo(() => {
+  const effectiveScoreResult: ScoreResult = (() => {
     if (!scoreResult) {
       return {
         signScore: 70,
@@ -1059,20 +1059,20 @@ Signed for the Client: Daniel Price, Creative Director`;
       });
     }
     return scoreResult;
-  }, [scoreResult, promiseBrokenCount, mergedSignals, hasInjection, inspectData, confirmedIds, decideData]);
+  })();
 
   const top3Signals = mergedSignals.slice(0, 3);
   const remainingSignals = mergedSignals.slice(3);
 
-  const cachedStepsCount = React.useMemo(() => {
+  const cachedStepsCount = (() => {
     let count = 0;
     if (audit?.isJudgeMode) return 7;
     if (audit?.inspectData && !audit.inspectData.hasMalicious) count++;
     if (audit?.totalCredits === 0) return 7;
     return count;
-  }, [audit]);
+  })();
 
-  const stepsBreakdown: StepCreditInfo[] = React.useMemo(() => {
+  const stepsBreakdown: StepCreditInfo[] = (() => {
     if (audit?.isJudgeMode) {
       return [
         { name: "Guard", credits: 0, cached: true },
@@ -1093,7 +1093,7 @@ Signed for the Client: Daniel Price, Creative Director`;
       { name: "Fill", credits: 12, cached: false },
       { name: "Verify", credits: 8, cached: false },
     ];
-  }, [audit]);
+  })();
 
   const docTypeLabel =
     decideData?.docType === "job_offer"
@@ -1107,9 +1107,9 @@ Signed for the Client: Daniel Price, Creative Director`;
       : "DOCUMENT CHECK";
 
   // Clauses for Phase 7
-  const documentClauses = React.useMemo(() => {
+  const documentClauses = (() => {
     return splitIntoClauses(cleanText || doc?.text || "");
-  }, [cleanText, doc]);
+  })();
 
   // Render document with both red/amber quote highlights and navy Ask Anything highlights
   const renderDocumentWithClausesAndHighlights = () => {
