@@ -15,7 +15,19 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "SignSafe — Check it before you sign it",
-  description: "Find the traps, ask the right questions, and get a fair version before you sign.",
+  description:
+    "Find the traps, ask the right questions, and get a fair version before you sign. Powered by Clocked.",
+  icons: {
+    icon: "/icon.svg",
+    apple: "/icon.svg",
+  },
+  openGraph: {
+    title: "SignSafe — Check it before you sign it",
+    description:
+      "Find the traps, ask the right questions, and get a fair version before you sign.",
+    type: "website",
+    siteName: "SignSafe",
+  },
 };
 
 export default function RootLayout({

@@ -564,8 +564,17 @@ export default function SharePage() {
                       </div>
 
                       {fix.rescored && (
-                        <span className="text-[11px] font-mono font-bold text-[#2FA36B]">
-                          Rescored with Clocked Decide ✓
+                        <span
+                          className={`text-[11px] font-mono font-bold ${
+                            share.rescoredWithClocked
+                              ? "text-[#2FA36B]"
+                              : "text-[#14213D]/70"
+                          }`}
+                        >
+                          {fix.rescoreNote ||
+                            (share.rescoredWithClocked
+                              ? "Rescored with Clocked Decide ✓"
+                              : "Rescored locally (live check unavailable)")}
                         </span>
                       )}
                     </div>

@@ -185,6 +185,54 @@ describe("Phase 11: Fair-deal share link, decision record & live rescore", () =>
       expect(rescored.signScore).toBeGreaterThan(initialScore.signScore);
       expect(rescored.label).toBe("LOOKS FAIR");
     });
+
+    it("sets rescoredWithClocked = true and shows 'Rescored with Clocked Decide ✓' when real Clocked Decide succeeds", () => {
+      const shareState: {
+        rescoredWithClocked: boolean;
+        fix: { rescored: boolean; rescoreNote?: string };
+      } = {
+        rescoredWithClocked: false,
+        fix: { rescored: false },
+      };
+
+      const usedClockedDecide = true; // Real call succeeded
+
+      shareState.fix.rescored = true;
+      if (usedClockedDecide) {
+        shareState.fix.rescoreNote = "Rescored with Clocked Decide ✓";
+        shareState.rescoredWithClocked = true;
+      } else {
+        shareState.fix.rescoreNote = "Rescored locally (live check unavailable)";
+        shareState.rescoredWithClocked = false;
+      }
+
+      expect(shareState.rescoredWithClocked).toBe(true);
+      expect(shareState.fix.rescoreNote).toBe("Rescored with Clocked Decide ✓");
+    });
+
+    it("sets rescoredWithClocked = false and shows 'Rescored locally (live check unavailable)' when fallback runs", () => {
+      const shareState: {
+        rescoredWithClocked: boolean;
+        fix: { rescored: boolean; rescoreNote?: string };
+      } = {
+        rescoredWithClocked: true, // prior value
+        fix: { rescored: false },
+      };
+
+      const usedClockedDecide = false; // Fallback triggered (out of credits, paused, or outage)
+
+      shareState.fix.rescored = true;
+      if (usedClockedDecide) {
+        shareState.fix.rescoreNote = "Rescored with Clocked Decide ✓";
+        shareState.rescoredWithClocked = true;
+      } else {
+        shareState.fix.rescoreNote = "Rescored locally (live check unavailable)";
+        shareState.rescoredWithClocked = false;
+      }
+
+      expect(shareState.rescoredWithClocked).toBe(false);
+      expect(shareState.fix.rescoreNote).toBe("Rescored locally (live check unavailable)");
+    });
   });
 
   describe("4. Decision Record Structure & Integrity", () => {

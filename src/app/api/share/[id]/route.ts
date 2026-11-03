@@ -94,6 +94,7 @@ export async function PATCH(req: NextRequest, { params }: RouteProps) {
 
       // 2. Call Clocked Decide with state set to the new clause and the attached flags
       let flagsCleared = true;
+      let usedClockedDecide = false;
       try {
         if (
           process.env.CLOCKED_API_KEY &&
@@ -124,6 +125,7 @@ export async function PATCH(req: NextRequest, { params }: RouteProps) {
           const selected = decideRes.data?.answers?.attached_flags?.selected || [];
           // Flag is cleared if none of the attached flags were selected
           flagsCleared = !fix.flagIds?.some((fid) => selected.includes(fid));
+          usedClockedDecide = true;
         }
       } catch (e) {
         console.warn("[share/rescore] Decide error, using fallback verification:", e);
@@ -159,8 +161,13 @@ export async function PATCH(req: NextRequest, { params }: RouteProps) {
         };
 
         fix.rescored = true;
-        fix.rescoreNote = "Rescored with Clocked Decide ✓";
-        share.rescoredWithClocked = true;
+        if (usedClockedDecide) {
+          fix.rescoreNote = "Rescored with Clocked Decide ✓";
+          share.rescoredWithClocked = true;
+        } else {
+          fix.rescoreNote = "Rescored locally (live check unavailable)";
+          share.rescoredWithClocked = false;
+        }
       }
     }
 
