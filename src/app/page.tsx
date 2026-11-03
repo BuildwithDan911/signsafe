@@ -35,9 +35,131 @@ export default function HomePage() {
   const [pastedText, setPastedText] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
 
+  // Compare Tab state
+  const [compareV1Text, setCompareV1Text] = useState("");
+  const [compareV2Text, setCompareV2Text] = useState("");
+  const [compareV1Name, setCompareV1Name] = useState("");
+  const [compareV2Name, setCompareV2Name] = useState("");
+  const [compareV1Mode, setCompareV1Mode] = useState<"paste" | "file" | "link">("paste");
+  const [compareV2Mode, setCompareV2Mode] = useState<"paste" | "file" | "link">("paste");
+  const [compareV1Link, setCompareV1Link] = useState("");
+  const [compareV2Link, setCompareV2Link] = useState("");
+  const fileV1InputRef = useRef<HTMLInputElement>(null);
+  const fileV2InputRef = useRef<HTMLInputElement>(null);
+
   const showToast = (message: string) => {
     setToastMessage(message);
     setTimeout(() => setToastMessage(null), 4000);
+  };
+
+  const handleCompareFile = async (version: 1 | 2, file: File) => {
+    setIsProcessing(true);
+    setProcessingStatus(`Reading ${file.name} for Version ${version}...`);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/read", { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to read file");
+
+      if (version === 1) {
+        setCompareV1Text(data.signDoc.text);
+        setCompareV1Name(file.name);
+      } else {
+        setCompareV2Text(data.signDoc.text);
+        setCompareV2Name(file.name);
+      }
+      showToast(`Loaded ${file.name} for Version ${version}`);
+    } catch (err: any) {
+      showToast(err.message || `Failed to read Version ${version} file`);
+    } finally {
+      setIsProcessing(false);
+      setProcessingStatus("");
+    }
+  };
+
+  const handleCompareLink = async (version: 1 | 2) => {
+    const url = version === 1 ? compareV1Link.trim() : compareV2Link.trim();
+    if (!url) {
+      showToast(`Please enter a URL for Version ${version}`);
+      return;
+    }
+    setIsProcessing(true);
+    setProcessingStatus(`Fetching link for Version ${version}...`);
+    try {
+      const res = await fetch("/api/read-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to fetch link");
+
+      if (version === 1) {
+        setCompareV1Text(data.signDoc.text);
+        setCompareV1Name(url);
+      } else {
+        setCompareV2Text(data.signDoc.text);
+        setCompareV2Name(url);
+      }
+      showToast(`Fetched Version ${version} text from URL`);
+    } catch (err: any) {
+      showToast(err.message || `Failed to fetch Version ${version} link`);
+    } finally {
+      setIsProcessing(false);
+      setProcessingStatus("");
+    }
+  };
+
+  const handleRunCompare = () => {
+    if (!compareV1Text.trim()) {
+      showToast("Please provide the text or document for 'Version you saw first'");
+      return;
+    }
+    if (!compareV2Text.trim()) {
+      showToast("Please provide the text or document for 'New version'");
+      return;
+    }
+
+    sessionStorage.setItem(
+      "signsafe_compare_input",
+      JSON.stringify({
+        text1: compareV1Text,
+        text2: compareV2Text,
+        name1: compareV1Name || "Version 1",
+        name2: compareV2Name || "Version 2",
+      })
+    );
+    router.push("/changes");
+  };
+
+  const handleLoadTenancyCompare = async () => {
+    setIsProcessing(true);
+    setProcessingStatus("Loading Tenancy Agreement V1 and V2...");
+    try {
+      const [v1Res, v2Res] = await Promise.all([
+        fetch("/samples/04_tenancy_v1.md"),
+        fetch("/samples/04_tenancy_v2.md"),
+      ]);
+      if (!v1Res.ok || !v2Res.ok) throw new Error("Could not load tenancy samples");
+      const text1 = await v1Res.text();
+      const text2 = await v2Res.text();
+
+      sessionStorage.setItem(
+        "signsafe_compare_input",
+        JSON.stringify({
+          text1,
+          text2,
+          name1: "04_tenancy_v1.md",
+          name2: "04_tenancy_v2.md",
+        })
+      );
+      router.push("/changes");
+    } catch (err: any) {
+      showToast(err.message || "Failed to load tenancy samples");
+      setIsProcessing(false);
+      setProcessingStatus("");
+    }
   };
 
   const handleFileUpload = async (file: File) => {
@@ -442,42 +564,237 @@ export default function HomePage() {
                     )}
 
                     {activeTab === "compare" && (
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <div>
-                            <span className="block text-xs font-mono font-semibold uppercase text-[#14213D]/70 mb-1.5">
-                              Version 1 (Initial / Original)
-                            </span>
-                            <div
-                              onClick={() => showToast("Version 1 selector ready in Phase 9")}
-                              className="border border-dashed border-[#14213D]/25 rounded-xl p-5 bg-[#FFFFFF]/80 text-center cursor-pointer hover:bg-[#FFFFFF]"
-                            >
-                              <FileText className="w-5 h-5 mx-auto text-[#14213D]/50 mb-1" />
-                              <span className="text-xs text-[#14213D]/75 font-medium">
-                                Select or paste Version 1
-                              </span>
+                      <div className="space-y-5">
+                        {/* Hidden file inputs for Version 1 and Version 2 */}
+                        <input
+                          ref={fileV1InputRef}
+                          type="file"
+                          accept=".pdf,.docx,.docm,.doc,.txt,.md"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleCompareFile(1, file);
+                            e.target.value = "";
+                          }}
+                        />
+                        <input
+                          ref={fileV2InputRef}
+                          type="file"
+                          accept=".pdf,.docx,.docm,.doc,.txt,.md"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleCompareFile(2, file);
+                            e.target.value = "";
+                          }}
+                        />
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-left">
+                          {/* Column 1: Version you saw first */}
+                          <div className="p-4 rounded-xl bg-[#FFFFFF]/90 border border-[#14213D]/15 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <label className="text-xs font-mono font-bold uppercase tracking-wider text-[#14213D]">
+                                Version you saw first
+                              </label>
+                              {compareV1Text ? (
+                                <span className="text-[11px] font-mono font-semibold text-[#2FA36B] flex items-center gap-1">
+                                  <CheckCircle2 className="w-3 h-3" />
+                                  <span>Loaded ({compareV1Text.length} chars)</span>
+                                </span>
+                              ) : (
+                                <span className="text-[11px] font-mono text-[#14213D]/50">Required</span>
+                              )}
                             </div>
+
+                            {/* Mode selector */}
+                            <div className="flex gap-1.5 p-1 bg-[#FBF8F1] rounded-lg border border-[#14213D]/10 text-xs font-mono">
+                              <button
+                                type="button"
+                                onClick={() => setCompareV1Mode("paste")}
+                                className={`flex-1 py-1 px-2 rounded font-medium transition-all ${
+                                  compareV1Mode === "paste"
+                                    ? "bg-[#14213D] text-[#FBF8F1] shadow-xs"
+                                    : "text-[#14213D]/70 hover:text-[#14213D]"
+                                }`}
+                              >
+                                Paste
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setCompareV1Mode("file")}
+                                className={`flex-1 py-1 px-2 rounded font-medium transition-all ${
+                                  compareV1Mode === "file"
+                                    ? "bg-[#14213D] text-[#FBF8F1] shadow-xs"
+                                    : "text-[#14213D]/70 hover:text-[#14213D]"
+                                }`}
+                              >
+                                File
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setCompareV1Mode("link")}
+                                className={`flex-1 py-1 px-2 rounded font-medium transition-all ${
+                                  compareV1Mode === "link"
+                                    ? "bg-[#14213D] text-[#FBF8F1] shadow-xs"
+                                    : "text-[#14213D]/70 hover:text-[#14213D]"
+                                }`}
+                              >
+                                Link
+                              </button>
+                            </div>
+
+                            {compareV1Mode === "paste" && (
+                              <textarea
+                                rows={5}
+                                value={compareV1Text}
+                                onChange={(e) => setCompareV1Text(e.target.value)}
+                                placeholder="Paste Version 1 contract clauses or text here..."
+                                className="w-full p-3 rounded-lg bg-[#FBF8F1]/70 border border-[#14213D]/20 focus:border-[#14213D] text-xs sm:text-sm text-[#14213D] placeholder-[#14213D]/40 resize-none font-sans"
+                              />
+                            )}
+
+                            {compareV1Mode === "file" && (
+                              <div
+                                onClick={() => fileV1InputRef.current?.click()}
+                                className="border border-dashed border-[#14213D]/30 rounded-lg p-5 bg-[#FBF8F1]/60 text-center cursor-pointer hover:bg-[#FBF8F1] transition-colors"
+                              >
+                                <UploadCloud className="w-6 h-6 mx-auto text-[#14213D]/60 mb-1.5" />
+                                <span className="text-xs text-[#14213D] font-medium block">
+                                  {compareV1Name || "Upload PDF, Word, or Text"}
+                                </span>
+                                <span className="text-[10px] text-[#14213D]/50 font-mono">
+                                  Click to browse file
+                                </span>
+                              </div>
+                            )}
+
+                            {compareV1Mode === "link" && (
+                              <div className="flex gap-2">
+                                <input
+                                  type="url"
+                                  value={compareV1Link}
+                                  onChange={(e) => setCompareV1Link(e.target.value)}
+                                  placeholder="https://example.com/v1"
+                                  className="flex-1 p-2.5 rounded-lg bg-[#FBF8F1]/70 border border-[#14213D]/20 text-xs font-mono"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleCompareLink(1)}
+                                  className="px-3 py-2 bg-[#14213D] text-[#FBF8F1] text-xs font-semibold rounded-lg hover:bg-[#1f3158]"
+                                >
+                                  Fetch
+                                </button>
+                              </div>
+                            )}
                           </div>
-                          <div>
-                            <span className="block text-xs font-mono font-semibold uppercase text-[#14213D]/70 mb-1.5">
-                              Version 2 (New / Revised)
-                            </span>
-                            <div
-                              onClick={() => showToast("Version 2 selector ready in Phase 9")}
-                              className="border border-dashed border-[#14213D]/25 rounded-xl p-5 bg-[#FFFFFF]/80 text-center cursor-pointer hover:bg-[#FFFFFF]"
-                            >
-                              <FileText className="w-5 h-5 mx-auto text-[#14213D]/50 mb-1" />
-                              <span className="text-xs text-[#14213D]/75 font-medium">
-                                Select or paste Version 2
-                              </span>
+
+                          {/* Column 2: New version */}
+                          <div className="p-4 rounded-xl bg-[#FFFFFF]/90 border border-[#14213D]/15 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <label className="text-xs font-mono font-bold uppercase tracking-wider text-[#14213D]">
+                                New version
+                              </label>
+                              {compareV2Text ? (
+                                <span className="text-[11px] font-mono font-semibold text-[#2FA36B] flex items-center gap-1">
+                                  <CheckCircle2 className="w-3 h-3" />
+                                  <span>Loaded ({compareV2Text.length} chars)</span>
+                                </span>
+                              ) : (
+                                <span className="text-[11px] font-mono text-[#14213D]/50">Required</span>
+                              )}
                             </div>
+
+                            {/* Mode selector */}
+                            <div className="flex gap-1.5 p-1 bg-[#FBF8F1] rounded-lg border border-[#14213D]/10 text-xs font-mono">
+                              <button
+                                type="button"
+                                onClick={() => setCompareV2Mode("paste")}
+                                className={`flex-1 py-1 px-2 rounded font-medium transition-all ${
+                                  compareV2Mode === "paste"
+                                    ? "bg-[#14213D] text-[#FBF8F1] shadow-xs"
+                                    : "text-[#14213D]/70 hover:text-[#14213D]"
+                                }`}
+                              >
+                                Paste
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setCompareV2Mode("file")}
+                                className={`flex-1 py-1 px-2 rounded font-medium transition-all ${
+                                  compareV2Mode === "file"
+                                    ? "bg-[#14213D] text-[#FBF8F1] shadow-xs"
+                                    : "text-[#14213D]/70 hover:text-[#14213D]"
+                                }`}
+                              >
+                                File
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setCompareV2Mode("link")}
+                                className={`flex-1 py-1 px-2 rounded font-medium transition-all ${
+                                  compareV2Mode === "link"
+                                    ? "bg-[#14213D] text-[#FBF8F1] shadow-xs"
+                                    : "text-[#14213D]/70 hover:text-[#14213D]"
+                                }`}
+                              >
+                                Link
+                              </button>
+                            </div>
+
+                            {compareV2Mode === "paste" && (
+                              <textarea
+                                rows={5}
+                                value={compareV2Text}
+                                onChange={(e) => setCompareV2Text(e.target.value)}
+                                placeholder="Paste Version 2 (revised) contract clauses or text here..."
+                                className="w-full p-3 rounded-lg bg-[#FBF8F1]/70 border border-[#14213D]/20 focus:border-[#14213D] text-xs sm:text-sm text-[#14213D] placeholder-[#14213D]/40 resize-none font-sans"
+                              />
+                            )}
+
+                            {compareV2Mode === "file" && (
+                              <div
+                                onClick={() => fileV2InputRef.current?.click()}
+                                className="border border-dashed border-[#14213D]/30 rounded-lg p-5 bg-[#FBF8F1]/60 text-center cursor-pointer hover:bg-[#FBF8F1] transition-colors"
+                              >
+                                <UploadCloud className="w-6 h-6 mx-auto text-[#14213D]/60 mb-1.5" />
+                                <span className="text-xs text-[#14213D] font-medium block">
+                                  {compareV2Name || "Upload PDF, Word, or Text"}
+                                </span>
+                                <span className="text-[10px] text-[#14213D]/50 font-mono">
+                                  Click to browse file
+                                </span>
+                              </div>
+                            )}
+
+                            {compareV2Mode === "link" && (
+                              <div className="flex gap-2">
+                                <input
+                                  type="url"
+                                  value={compareV2Link}
+                                  onChange={(e) => setCompareV2Link(e.target.value)}
+                                  placeholder="https://example.com/v2"
+                                  className="flex-1 p-2.5 rounded-lg bg-[#FBF8F1]/70 border border-[#14213D]/20 text-xs font-mono"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleCompareLink(2)}
+                                  className="px-3 py-2 bg-[#14213D] text-[#FBF8F1] text-xs font-semibold rounded-lg hover:bg-[#1f3158]"
+                                >
+                                  Fetch
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </div>
+
+                        {/* Submit Button */}
                         <button
-                          onClick={() => showToast("Compare engine runs in Phase 9")}
-                          className="w-full py-3.5 rounded-xl bg-[#14213D] hover:bg-[#1f3158] text-[#FBF8F1] text-sm font-semibold transition-all shadow-sm"
+                          type="button"
+                          onClick={handleRunCompare}
+                          className="w-full py-3.5 sm:py-4 rounded-xl bg-[#14213D] hover:bg-[#1f3158] text-[#FBF8F1] text-sm sm:text-base font-semibold transition-all shadow-md flex items-center justify-center gap-2.5 cursor-pointer active:scale-[0.99]"
                         >
-                          Compare Meaning Changes
+                          <GitCompare className="w-5 h-5" />
+                          <span>Compare Meaning Changes</span>
                         </button>
                       </div>
                     )}
@@ -585,12 +902,7 @@ export default function HomePage() {
                 foldedCorner={true}
                 colorTab="navy"
                 tabLabel="Lease V1 vs V2"
-                onClick={() =>
-                  handleLoadSample(
-                    "/samples/04_tenancy_v1.md",
-                    "04_tenancy_v1.md"
-                  )
-                }
+                onClick={() => handleLoadTenancyCompare()}
                 className="h-full flex flex-col justify-between"
               >
                 <div>
