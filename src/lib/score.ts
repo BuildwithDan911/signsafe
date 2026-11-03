@@ -155,3 +155,60 @@ export function calculateScore(input: ScoreInput): ScoreResult {
     breakdown,
   };
 }
+
+export function computeScore(input: {
+  signalPoints?: number;
+  mergedSignals?: MergedSignal[];
+  greenSignalsCount?: number;
+  guardInjection?: boolean;
+  inspectMalicious?: boolean;
+  confirmedSignalIds?: string[];
+  brokenPromisesCount?: number;
+  failedSafetySteps?: string[];
+}): ScoreResult {
+  if (input.signalPoints !== undefined) {
+    const points = input.signalPoints;
+    const greens = input.greenSignalsCount || 0;
+    let color: "green" | "amber" | "red" = "green";
+    let label = "LOOKS FAIR";
+    let headline = "Looks fair. No major warning signs detected.";
+    if (points === 0) {
+      color = "green";
+      label = "LOOKS FAIR";
+    } else if (points <= 3) {
+      color = "amber";
+      label = "ASK FIRST";
+      headline = "Ask first. A few items should be clarified before signing.";
+    } else {
+      color = "red";
+      label = "DON'T SIGN YET";
+      headline = "Don't sign yet. Several significant warning signs add up. Verify first.";
+    }
+    const rawScore = 100 - 12 * points + 5 * greens;
+    let signScore: number;
+    if (color === "green") {
+      signScore = Math.max(75, Math.min(100, rawScore));
+    } else if (color === "amber") {
+      signScore = Math.max(40, Math.min(74, rawScore));
+    } else {
+      signScore = Math.max(0, Math.min(39, rawScore));
+    }
+    return {
+      signScore,
+      color,
+      label,
+      headline,
+      totalPoints: points,
+      breakdown: [],
+    };
+  }
+  return calculateScore({
+    mergedSignals: input.mergedSignals || [],
+    guardInjection: input.guardInjection,
+    inspectMalicious: input.inspectMalicious,
+    confirmedSignalIds: input.confirmedSignalIds,
+    greenSignalsCount: input.greenSignalsCount,
+    brokenPromisesCount: input.brokenPromisesCount,
+    failedSafetySteps: input.failedSafetySteps,
+  });
+}

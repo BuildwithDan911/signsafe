@@ -89,7 +89,10 @@ describe("Phase 9: What changed with Compare, local diff and Decide", () => {
       async () => {
         const req = new NextRequest("http://localhost:3000/api/check/compare", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "x-skip-ratelimit": "test",
+          },
           body: JSON.stringify({
             text1: v1Text,
             text2: v2Text,
@@ -145,7 +148,10 @@ describe("Phase 9: What changed with Compare, local diff and Decide", () => {
       async () => {
         const req2 = new NextRequest("http://localhost:3000/api/check/compare", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "x-skip-ratelimit": "test",
+          },
           body: JSON.stringify({
             text1: v1Text,
             text2: v2Text,

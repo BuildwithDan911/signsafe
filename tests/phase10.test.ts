@@ -93,15 +93,11 @@ describe("Phase 10: Judge Mode, credit counter, and graceful failures", () => {
   });
 
   describe("2. Rate Limiter (5 live checks per hour per IP)", () => {
-    const testIp = "198.51.100.99";
-
-    beforeEach(async () => {
-      await resetRateLimit(testIp);
-    });
-
     it("allows up to 5 checks within the hour window", async () => {
+      const ip = "198.51.100.101";
+      await resetRateLimit(ip);
       for (let i = 1; i <= 5; i++) {
-        const res = await checkRateLimit(testIp, 5, 3600);
+        const res = await checkRateLimit(ip, 5, 3600);
         expect(res.allowed).toBe(true);
         expect(res.count).toBe(i);
         expect(res.remaining).toBe(5 - i);
@@ -109,13 +105,15 @@ describe("Phase 10: Judge Mode, credit counter, and graceful failures", () => {
     });
 
     it("rejects the 6th check from the same IP with allowed: false", async () => {
+      const ip = "198.51.100.102";
+      await resetRateLimit(ip);
       // Consume 5 checks
       for (let i = 1; i <= 5; i++) {
-        await checkRateLimit(testIp, 5, 3600);
+        await checkRateLimit(ip, 5, 3600);
       }
 
       // 6th check should be denied
-      const res6 = await checkRateLimit(testIp, 5, 3600);
+      const res6 = await checkRateLimit(ip, 5, 3600);
       expect(res6.allowed).toBe(false);
       expect(res6.count).toBe(6);
       expect(res6.remaining).toBe(0);
@@ -123,30 +121,34 @@ describe("Phase 10: Judge Mode, credit counter, and graceful failures", () => {
     });
 
     it("resets rate limit properly with resetRateLimit", async () => {
+      const ip = "198.51.100.103";
+      await resetRateLimit(ip);
       // Consume 5 checks and verify blocked
       for (let i = 1; i <= 5; i++) {
-        await checkRateLimit(testIp, 5, 3600);
+        await checkRateLimit(ip, 5, 3600);
       }
-      const blocked = await checkRateLimit(testIp, 5, 3600);
+      const blocked = await checkRateLimit(ip, 5, 3600);
       expect(blocked.allowed).toBe(false);
 
       // Reset
-      await resetRateLimit(testIp);
+      await resetRateLimit(ip);
 
       // Should be allowed again
-      const afterReset = await checkRateLimit(testIp, 5, 3600);
+      const afterReset = await checkRateLimit(ip, 5, 3600);
       expect(afterReset.allowed).toBe(true);
       expect(afterReset.count).toBe(1);
       expect(afterReset.remaining).toBe(4);
     });
 
     it("evaluates different IPs independently", async () => {
-      const otherIp = "203.0.113.88";
+      const ip1 = "198.51.100.104";
+      const otherIp = "198.51.100.105";
+      await resetRateLimit(ip1);
       await resetRateLimit(otherIp);
 
-      // Exhaust testIp
+      // Exhaust ip1
       for (let i = 1; i <= 6; i++) {
-        await checkRateLimit(testIp, 5, 3600);
+        await checkRateLimit(ip1, 5, 3600);
       }
 
       // otherIp should still be fully allowed
@@ -154,6 +156,7 @@ describe("Phase 10: Judge Mode, credit counter, and graceful failures", () => {
       expect(res.allowed).toBe(true);
       expect(res.count).toBe(1);
 
+      await resetRateLimit(ip1);
       await resetRateLimit(otherIp);
     });
   });

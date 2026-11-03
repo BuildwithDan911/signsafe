@@ -28,12 +28,14 @@ import {
   Upload,
   Image as ImageIcon,
   X,
+  Share2,
 } from "lucide-react";
 import NotarySeal from "@/components/NotarySeal";
 import MarkerHighlight from "@/components/MarkerHighlight";
 import JudgeRibbon from "@/components/JudgeRibbon";
 import CreditCounter, { StepCreditInfo } from "@/components/CreditCounter";
 import CreditsModal from "@/components/CreditsModal";
+import { ShareDealModal } from "@/components/ShareDealModal";
 import { MergedSignal, SIGNALS_MAP } from "@/lib/signals";
 import { ScoreResult, calculateScore } from "@/lib/score";
 import { splitIntoClauses, Clause } from "@/lib/clauses";
@@ -164,6 +166,7 @@ export default function ResultsPage() {
   const [imageError, setImageError] = useState<string | null>(null);
   const [hasAutoCheckedPromises, setHasAutoCheckedPromises] = useState(false);
   const [isCreditsModalOpen, setIsCreditsModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
   const documentViewRef = useRef<HTMLDivElement>(null);
 
@@ -1314,6 +1317,17 @@ Signed for the Client: Daniel Price, Creative Director`;
             <p className="text-sm sm:text-base text-[#14213D]/75 leading-relaxed max-w-xl">
               Signals add up. Nothing alone is a verdict. Below are the key warning signs identified by our multi-stage inspection, merged to cut noise and ranked by importance.
             </p>
+
+            <div className="pt-2 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setIsShareModalOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#2FA36B] hover:bg-[#258255] text-white text-xs sm:text-sm font-semibold transition shadow-sm cursor-pointer"
+              >
+                <Share2 className="w-4 h-4" />
+                <span>Share a fair-deal link with the other side</span>
+              </button>
+            </div>
           </div>
         </section>
 
@@ -1743,6 +1757,15 @@ Signed for the Client: Daniel Price, Creative Director`;
                   >
                     <Copy className="w-3.5 h-3.5 text-[#E8A33D]" />
                     <span>{copiedId === "all-fair" ? "Copied Fair Version ✓" : "Copy fair version"}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsShareModalOpen(true)}
+                    className="px-3.5 py-1.5 rounded-lg bg-[#2FA36B] text-white text-xs font-semibold hover:bg-[#258255] transition shadow-2xs inline-flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Share2 className="w-3.5 h-3.5" />
+                    <span>Share link with other side</span>
                   </button>
                 </div>
               </div>
@@ -2578,6 +2601,33 @@ Signed for the Client: Daniel Price, Creative Director`;
       <CreditsModal
         isOpen={isCreditsModalOpen}
         onClose={() => setIsCreditsModalOpen(false)}
+      />
+
+      {/* Fair Deal Share Modal */}
+      <ShareDealModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        anonymizedText={
+          (audit?.protectData as any)?.anonymized_text ||
+          audit?.cleanText ||
+          audit?.doc?.text ||
+          ""
+        }
+        cleanText={audit?.cleanText || audit?.doc?.text || ""}
+        protectEntities={(audit?.protectData as any)?.entities || []}
+        fairClauses={fairResult?.clauses || []}
+        flags={mergedSignals || []}
+        scoreResult={effectiveScoreResult}
+        checksRun={stepsBreakdown.map((s) => ({
+          step: s.name,
+          name: s.name,
+          credits: s.credits,
+          cached: s.cached,
+        }))}
+        totalCredits={audit?.isJudgeMode ? 0 : totalCredits}
+        docType={audit?.decideData?.docType || "contract"}
+        fileName={audit?.doc?.fileName || "document"}
+        brokenPromises={(promiseItems || []).filter((p) => p.status === "broken")}
       />
     </div>
   );
