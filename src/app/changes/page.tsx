@@ -17,6 +17,9 @@ import {
 } from "lucide-react";
 import PaperCard from "@/components/PaperCard";
 import NotarySeal from "@/components/NotarySeal";
+import JudgeRibbon from "@/components/JudgeRibbon";
+import CreditCounter, { StepCreditInfo } from "@/components/CreditCounter";
+import CreditsModal from "@/components/CreditsModal";
 import { MeaningChange, WordingOnlyChange } from "@/lib/compare";
 
 interface CompareApiResponse {
@@ -37,6 +40,9 @@ export default function ChangesPage() {
   const [error, setError] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [showWordingDetails, setShowWordingDetails] = useState(false);
+  const [isJudgeMode, setIsJudgeMode] = useState(false);
+  const [judgeRecordedAt, setJudgeRecordedAt] = useState<string | null>(null);
+  const [isCreditsModalOpen, setIsCreditsModalOpen] = useState(false);
 
   const runComparison = async (text1: string, text2: string) => {
     setIsLoading(true);
@@ -64,6 +70,25 @@ export default function ChangesPage() {
 
   useEffect(() => {
     const loadAndCompare = async () => {
+      // 0. Check Judge Mode replay
+      const storedJudge = sessionStorage.getItem("signsafe_judge_mode");
+      if (storedJudge) {
+        try {
+          const parsedJudge = JSON.parse(storedJudge);
+          setIsJudgeMode(true);
+          setJudgeRecordedAt(parsedJudge.recordedAt || null);
+
+          const storedChanges = sessionStorage.getItem("signsafe_changes");
+          if (storedChanges) {
+            setData(JSON.parse(storedChanges));
+            setIsLoading(false);
+            return;
+          }
+        } catch (e) {
+          console.error("Failed to parse judge mode changes:", e);
+        }
+      }
+
       // 1. Check if comparison input exists in sessionStorage
       const storedInput = sessionStorage.getItem("signsafe_compare_input");
       if (storedInput) {
@@ -113,8 +138,19 @@ export default function ChangesPage() {
     return 94;
   };
 
+  const compareStepsBreakdown: StepCreditInfo[] = [
+    {
+      name: "Compare (Meaning & Local Diff)",
+      credits: isJudgeMode ? 0 : data?.meta?.credits || 0,
+      cached: isJudgeMode ? true : data?.meta?.cached,
+    },
+  ];
+
   return (
     <div className="min-h-screen flex flex-col justify-between selection:bg-[#E8A33D]/25 bg-[#FBF8F1] text-[#14213D] font-sans">
+      {/* Judge Mode Top Ribbon */}
+      {isJudgeMode && <JudgeRibbon recordedAt={judgeRecordedAt || undefined} />}
+
       {/* Top Header */}
       <header className="w-full border-b border-[#14213D]/10 bg-[#FBF8F1]/90 backdrop-blur-md sticky top-0 z-40">
         <div className="max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-3">
@@ -132,13 +168,12 @@ export default function ChangesPage() {
           </Link>
 
           <div className="flex items-center gap-3">
-            {data && (
-              <div className="text-xs font-mono px-3 py-1.5 rounded-full bg-[#14213D]/5 border border-[#14213D]/10 text-[#14213D]/75 flex items-center gap-1.5">
-                <span>
-                  This check: {data.meta.cached ? "0 credits (cached)" : `${data.meta.credits} credits`}
-                </span>
-              </div>
-            )}
+            <CreditCounter
+              totalCredits={isJudgeMode ? 0 : data?.meta?.credits || 0}
+              isJudgeMode={isJudgeMode}
+              stepsBreakdown={compareStepsBreakdown}
+              onOpenCreditsModal={() => setIsCreditsModalOpen(true)}
+            />
             <span className="hidden sm:inline-block text-xs font-mono uppercase tracking-wider text-[#14213D]/50 border-l border-[#14213D]/10 pl-3">
               Not legal advice
             </span>
@@ -497,9 +532,27 @@ export default function ChangesPage() {
       <footer className="w-full border-t border-[#14213D]/10 py-6 bg-[#FBF8F1] text-center text-xs sm:text-sm text-[#14213D]/65">
         <div className="max-w-[1100px] mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <span>SignSafe is not legal advice. It helps you spot things to ask about.</span>
-          <span className="font-mono text-xs text-[#14213D]/50">Phase 9: What changed</span>
+          <div className="flex items-center gap-3 font-mono text-xs">
+            <button
+              type="button"
+              onClick={() => setIsCreditsModalOpen(true)}
+              className="text-[#14213D] hover:underline cursor-pointer font-semibold"
+            >
+              How credits work
+            </button>
+            <span>•</span>
+            <Link href="/" className="hover:text-[#14213D] transition-colors">
+              Home
+            </Link>
+          </div>
         </div>
       </footer>
+
+      {/* Credits Modal */}
+      <CreditsModal
+        isOpen={isCreditsModalOpen}
+        onClose={() => setIsCreditsModalOpen(false)}
+      />
     </div>
   );
 }

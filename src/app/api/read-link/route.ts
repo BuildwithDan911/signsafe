@@ -4,7 +4,7 @@ import { SignDoc } from "@/lib/types";
 import { fetchAndParseLink } from "@/server/link";
 import { findCommandLines, findEmails } from "@/server/inspectors";
 
-export const maxDuration = 15;
+export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {

@@ -5,7 +5,7 @@ import { parseDocx } from "@/server/docx";
 import { parsePdf } from "@/server/pdf";
 import { findCommandLines, findEmails, findHiddenInText } from "@/server/inspectors";
 
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {

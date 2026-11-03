@@ -1,0 +1,597 @@
+{
+  "sampleId": "freelance_contract",
+  "title": "Freelance Contract + Chat Promises",
+  "recordedAt": "2026-11-03T18:49:47.385Z",
+  "totalCredits": 0,
+  "doc": {
+    "id": "3a2cae39-b928-4e78-9216-fbce30cfcf2a",
+    "sourceType": "paste",
+    "fileName": "02_freelance_design_contract.md",
+    "text": "> **SYNTHETIC DEMO DOCUMENT. Fictional parties. Not legal advice.**\n\n# Freelance Design Services Agreement\n**Client:** Larkspur Studio Ltd, Company No. 09876543, 14 Canal Street, Manchester M1 3HE (fictional)\n**Contractor:** Amara Bello, freelance brand designer (fictional)\n**Reference:** Your proposal LS-2026-118 dated 28 October 2026\n\n1. **Services.** Contractor will design a brand identity: logo, colour palette, typography and a 12-page brand guideline document.\n2. **Fee.** GBP 4,500, paid in two equal parts: GBP 2,250 on signing and GBP 2,250 on final delivery.\n3. **Payment terms.** Invoices are payable within 60 days of receipt.\n4. **Revisions.** The fee includes two rounds of revisions. Further rounds are charged at the Contractor's day rate of GBP 400.\n5. **Timeline.** Final delivery by 15 December 2026. Either party may agree a new date in writing.\n6. **Ownership.** Ownership of the final approved logo and brand guidelines passes to the Client once the Client has paid all invoices in full. The Contractor keeps all unused concepts and sketches.\n7. **Termination.** Either party may end this Agreement with 14 days' written notice. The Client pays for all work completed up to the end date.\n8. **Liability.** The Contractor is liable for any loss the Client suffers in connection with the Services, without limit. The Client's total liability to the Contractor is limited to GBP 100.\n9. **Data.** The Client will never ask you for passwords, ID documents or payment to start work. Questions go to the project lead you already work with, Daniel Price, at daniel@larkspurstudio.example.\n10. **Governing law.** England and Wales.\n\nSigned for the Client: Daniel Price, Creative Director\n",
+    "hiddenText": [],
+    "fileSignals": [],
+    "scripts": [],
+    "metadata": {},
+    "emails": [
+      {
+        "email": "daniel@larkspurstudio.example",
+        "domain": "larkspurstudio.example",
+        "isFreeWebmail": false
+      }
+    ]
+  },
+  "cleanText": "> **SYNTHETIC DEMO DOCUMENT. Fictional parties. Not legal advice.**\n\n# Freelance Design Services Agreement\n**Client:** Larkspur Studio Ltd, Company No. 09876543, 14 Canal Street, Manchester M1 3HE (fictional)\n**Contractor:** Amara Bello, freelance brand designer (fictional)\n**Reference:** Your proposal LS-2026-118 dated 28 October 2026\n\n1. **Services.** Contractor will design a brand identity: logo, colour palette, typography and a 12-page brand guideline document.\n2. **Fee.** GBP 4,500, paid in two equal parts: GBP 2,250 on signing and GBP 2,250 on final delivery.\n3. **Payment terms.** Invoices are payable within 60 days of receipt.\n4. **Revisions.** The fee includes two rounds of revisions. Further rounds are charged at the Contractor's day rate of GBP 400.\n5. **Timeline.** Final delivery by 15 December 2026. Either party may agree a new date in writing.\n6. **Ownership.** Ownership of the final approved logo and brand guidelines passes to the Client once the Client has paid all invoices in full. The Contractor keeps all unused concepts and sketches.\n7. **Termination.** Either party may end this Agreement with 14 days' written notice. The Client pays for all work completed up to the end date.\n8. **Liability.** The Contractor is liable for any loss the Client suffers in connection with the Services, without limit. The Client's total liability to the Contractor is limited to GBP 100.\n9. **Data.** The Client will never ask you for passwords, ID documents or payment to start work. Questions go to the project lead you already work with, Daniel Price, at daniel@larkspurstudio.example.\n10. **Governing law.** England and Wales.\n\nSigned for the Client: Daniel Price, Creative Director\n",
+  "guard": {
+    "injection": false,
+    "injectionScore": 0.012083978361187131,
+    "verdict": "benign",
+    "category": "benign",
+    "severity": "none",
+    "evidence": [],
+    "cleanText": "> **SYNTHETIC DEMO DOCUMENT. Fictional parties. Not legal advice.**\n\n# Freelance Design Services Agreement\n**Client:** Larkspur Studio Ltd, Company No. 09876543, 14 Canal Street, Manchester M1 3HE (fictional)\n**Contractor:** Amara Bello, freelance brand designer (fictional)\n**Reference:** Your proposal LS-2026-118 dated 28 October 2026\n\n1. **Services.** Contractor will design a brand identity: logo, colour palette, typography and a 12-page brand guideline document.\n2. **Fee.** GBP 4,500, paid in two equal parts: GBP 2,250 on signing and GBP 2,250 on final delivery.\n3. **Payment terms.** Invoices are payable within 60 days of receipt.\n4. **Revisions.** The fee includes two rounds of revisions. Further rounds are charged at the Contractor's day rate of GBP 400.\n5. **Timeline.** Final delivery by 15 December 2026. Either party may agree a new date in writing.\n6. **Ownership.** Ownership of the final approved logo and brand guidelines passes to the Client once the Client has paid all invoices in full. The Contractor keeps all unused concepts and sketches.\n7. **Termination.** Either party may end this Agreement with 14 days' written notice. The Client pays for all work completed up to the end date.\n8. **Liability.** The Contractor is liable for any loss the Client suffers in connection with the Services, without limit. The Client's total liability to the Contractor is limited to GBP 100.\n9. **Data.** The Client will never ask you for passwords, ID documents or payment to start work. Questions go to the project lead you already work with, Daniel Price, at daniel@larkspurstudio.example.\n10. **Governing law.** England and Wales.\n\nSigned for the Client: Daniel Price, Creative Director\n",
+    "quarantinedQuotes": [],
+    "meta": {
+      "credits": 0,
+      "modelMs": 32,
+      "costUsd": 0.000398,
+      "costBasis": "reference",
+      "transport": "cache",
+      "cached": true
+    }
+  },
+  "inspect": {
+    "skipped": true,
+    "credits": 0,
+    "results": [],
+    "meta": {
+      "credits": 0,
+      "modelMs": 0,
+      "cached": false
+    }
+  },
+  "protect": {
+    "counts": {
+      "address": 1,
+      "person": 3,
+      "email": 1
+    },
+    "totalCount": 5,
+    "entities": [
+      {
+        "type": "address",
+        "value": "14 Canal Street, Manchester M1 3HE",
+        "start": 162,
+        "end": 196,
+        "confidence": 1
+      },
+      {
+        "type": "person",
+        "value": "Amara Bello",
+        "start": 225,
+        "end": 236,
+        "confidence": 1
+      },
+      {
+        "type": "person",
+        "value": "Daniel Price",
+        "start": 1559,
+        "end": 1571,
+        "confidence": 1
+      },
+      {
+        "type": "email",
+        "value": "daniel@larkspurstudio.example",
+        "start": 1576,
+        "end": 1605,
+        "confidence": 1
+      },
+      {
+        "type": "person",
+        "value": "Daniel Price",
+        "start": 1673,
+        "end": 1685,
+        "confidence": 1
+      }
+    ],
+    "anonymized_text": "> **SYNTHETIC DEMO DOCUMENT. Fictional parties. Not legal advice.**\n\n# Freelance Design Services Agreement\n**Client:** Larkspur Studio Ltd, Company No. 09876543, <ADDRESS> (fictional)\n**Contractor:** <PERSON>, freelance brand designer (fictional)\n**Reference:** Your proposal LS-2026-118 dated 28 October 2026\n\n1. **Services.** Contractor will design a brand identity: logo, colour palette, typography and a 12-page brand guideline document.\n2. **Fee.** GBP 4,500, paid in two equal parts: GBP 2,250 on signing and GBP 2,250 on final delivery.\n3. **Payment terms.** Invoices are payable within 60 days of receipt.\n4. **Revisions.** The fee includes two rounds of revisions. Further rounds are charged at the Contractor's day rate of GBP 400.\n5. **Timeline.** Final delivery by 15 December 2026. Either party may agree a new date in writing.\n6. **Ownership.** Ownership of the final approved logo and brand guidelines passes to the Client once the Client has paid all invoices in full. The Contractor keeps all unused concepts and sketches.\n7. **Termination.** Either party may end this Agreement with 14 days' written notice. The Client pays for all work completed up to the end date.\n8. **Liability.** The Contractor is liable for any loss the Client suffers in connection with the Services, without limit. The Client's total liability to the Contractor is limited to GBP 100.\n9. **Data.** The Client will never ask you for passwords, ID documents or payment to start work. Questions go to the project lead you already work with, <PERSON>, at <EMAIL>.\n10. **Governing law.** England and Wales.\n\nSigned for the Client: <PERSON>, Creative Director\n",
+    "meta": {
+      "credits": 0,
+      "modelMs": 227,
+      "costUsd": 0.001992,
+      "costBasis": "reference",
+      "transport": "cache",
+      "cached": true
+    }
+  },
+  "extract": {
+    "fields": {
+      "bank_account_name": {
+        "value": null,
+        "confidence": 1
+      },
+      "bank_details": {
+        "value": null,
+        "confidence": 0.995
+      },
+      "chat_apps_or_handles": {
+        "value": null,
+        "confidence": 0.992
+      },
+      "commands_to_run": {
+        "value": null,
+        "confidence": 0.536
+      },
+      "contact_emails": {
+        "value": [
+          "daniel@larkspurstudio.example"
+        ],
+        "confidence": 1,
+        "items": [
+          {
+            "value": "daniel@larkspurstudio.example",
+            "start": 1576,
+            "end": 1605,
+            "p_start": 1,
+            "p_close": 1,
+            "p_point": 1,
+            "p_verify": 1,
+            "p_more": 0.282,
+            "confidence": 1
+          }
+        ]
+      },
+      "contact_phones": {
+        "value": null,
+        "confidence": 0.981
+      },
+      "deadline_to_sign_or_pay": {
+        "value": null,
+        "confidence": 0.996
+      },
+      "governing_law": {
+        "value": "England and Wales",
+        "start": 1630,
+        "end": 1647,
+        "confidence": 1
+      },
+      "issuer_address": {
+        "value": "14 Canal Street, Manchester M1 3HE",
+        "start": 162,
+        "end": 196,
+        "confidence": 1
+      },
+      "issuer_name": {
+        "value": "Larkspur Studio Ltd",
+        "start": 119,
+        "end": 138,
+        "confidence": 1
+      },
+      "issuer_registration_number": {
+        "value": "09876543",
+        "start": 152,
+        "end": 160,
+        "confidence": 1
+      },
+      "links": {
+        "value": [],
+        "confidence": 1,
+        "items": []
+      },
+      "notice_or_termination": {
+        "value": "14 days' written notice",
+        "start": 1129,
+        "end": 1152,
+        "confidence": 1
+      },
+      "pay_you_receive": {
+        "value": "GBP 4,500",
+        "start": 482,
+        "end": 491,
+        "confidence": 0.982
+      },
+      "payment_methods": {
+        "value": null,
+        "confidence": 0.994
+      },
+      "payments_you_make": {
+        "value": [
+          "GBP 2,250",
+          "GBP 4,500",
+          "on signing"
+        ],
+        "confidence": 0.867,
+        "items": [
+          {
+            "value": "GBP 2,250",
+            "start": 518,
+            "end": 527,
+            "p_start": 1,
+            "p_close": 0.867,
+            "p_point": 0.575,
+            "p_verify": 1,
+            "alternatives": [
+              {
+                "value": "GBP 4,500",
+                "start": 482,
+                "p_verify": 1
+              },
+              {
+                "value": "GBP 2,250",
+                "start": 543,
+                "p_verify": 1
+              }
+            ],
+            "p_more": 1,
+            "confidence": 0.867
+          },
+          {
+            "value": "GBP 4,500",
+            "start": 482,
+            "end": 491,
+            "p_start": 0.989,
+            "p_close": 1,
+            "p_point": 0.008,
+            "p_verify": 1,
+            "alternatives": [
+              {
+                "value": "GBP 400",
+                "start": 761,
+                "p_verify": 0
+              }
+            ],
+            "p_more": 1,
+            "confidence": 0.989
+          },
+          {
+            "value": "on signing",
+            "start": 528,
+            "end": 538,
+            "p_start": 0.929,
+            "p_close": 1,
+            "p_point": 0.709,
+            "p_verify": 1,
+            "p_more": 1,
+            "confidence": 0.929
+          }
+        ]
+      },
+      "personal_data_requested": {
+        "value": [],
+        "confidence": 1,
+        "items": []
+      },
+      "recipient_greeting": {
+        "value": null,
+        "confidence": 0.058
+      },
+      "signatory_name": {
+        "value": "Daniel Price",
+        "start": 1673,
+        "end": 1685,
+        "confidence": 1
+      },
+      "signatory_role": {
+        "value": "Creative Director",
+        "start": 1687,
+        "end": 1704,
+        "confidence": 1
+      },
+      "start_date": {
+        "value": null,
+        "confidence": 1
+      },
+      "term_or_end_date": {
+        "value": null,
+        "confidence": 0.999
+      },
+      "verification_route": {
+        "value": "Questions go to the project lead you already work with, Daniel Price, at daniel@larkspurstudio.example",
+        "start": 1503,
+        "end": 1605,
+        "confidence": 1
+      }
+    },
+    "meta": {
+      "credits": 0,
+      "modelMs": 411,
+      "costUsd": 0.003386,
+      "costBasis": "reference",
+      "transport": "cache",
+      "cached": true
+    }
+  },
+  "decide": {
+    "answers": {
+      "authenticity_tells": {
+        "type": "multiselect",
+        "selected": [
+          "SI9"
+        ],
+        "probabilities": {
+          "FM5": 0.0031194100925172608,
+          "FM7": 0.008100880282130851,
+          "IN1": 0.004888853725319664,
+          "IN2": 0.003741876619654083,
+          "IN5": 0.003268576550591984,
+          "MA1": 0.0026674720145265507,
+          "MA10": 0.0029706918388135994,
+          "MA2": 0.0022727615250934807,
+          "MA3": 0.004461489690825937,
+          "MA4": 0.0033180780033639223,
+          "MA5": 0.0026317007893764677,
+          "MA6": 0.0031867742042247515,
+          "MA7": 0.0034247774309018597,
+          "MA8": 0.0025208983552127417,
+          "MA9": 0.0027808981384679354,
+          "PB1": 0.0031122357062355333,
+          "PB2": 0.0037690166230925914,
+          "PB3": 0.0030027988886681682,
+          "PB5": 0.0024186168271166375,
+          "PB6": 0.003191308799927684,
+          "PB7": 0.0033836047770773314,
+          "PR1": 0.005633226408229164,
+          "PR3": 0.0029568408524912604,
+          "PR4": 0.002917056364400539,
+          "PR5": 0.0025303958050292286,
+          "SI1": 0.0036152126498066872,
+          "SI2": 0.009647820158280362,
+          "SI5": 0.0057239135841457,
+          "SI6": 0.005684359591643373,
+          "SI7": 0.0038840417370787916,
+          "SI8": 0.005700406969349591,
+          "SI9": 0.6212132481172682,
+          "WD1": 0.003869069178953133,
+          "WD2": 0.01989149174421523,
+          "WD3": 0.004251774600322777,
+          "WD4": 0.004100588816227546,
+          "WD5": 0.003601683421331159,
+          "WD6": 0.00573584277843342,
+          "WD7": 0.0035769942534883414,
+          "WD8": 0.0033385360693171107
+        },
+        "threshold": 0.5
+      },
+      "contract_terms": {
+        "type": "multiselect",
+        "selected": [
+          "RF3.13",
+          "RF3.14"
+        ],
+        "probabilities": {
+          "RF1.1": 0.003427251131134623,
+          "RF1.10": 0.0031233085017003948,
+          "RF1.11": 0.0030857890894160356,
+          "RF1.12": 0.002721474080322861,
+          "RF1.2": 0.006201785412501715,
+          "RF1.3": 0.0023748245307861904,
+          "RF1.4": 0.0030159195659574807,
+          "RF1.5": 0.0030980038514623054,
+          "RF1.6": 0.003503952045226577,
+          "RF1.7": 0.0027632590168752413,
+          "RF1.8": 0.0030497612078639325,
+          "RF1.9": 0.0034225630873634394,
+          "RF2.1": 0.0028785992049756848,
+          "RF2.10": 0.0031969431680842764,
+          "RF2.11": 0.0036597676108005572,
+          "RF2.12": 0.0029514542907903563,
+          "RF2.13": 0.0028416119724119504,
+          "RF2.2": 0.003313807332614549,
+          "RF2.3": 0.002598267930091991,
+          "RF2.4": 0.006381690301349274,
+          "RF2.5": 0.0033400446541039797,
+          "RF2.6": 0.002950347405954346,
+          "RF2.7": 0.0030474631913486316,
+          "RF2.8": 0.0033626489020717187,
+          "RF2.9": 0.003003022040412806,
+          "RF3.1": 0.0028036244696171275,
+          "RF3.10": 0.002371260660032126,
+          "RF3.11": 0.0027953438094521217,
+          "RF3.12": 0.003875626966789336,
+          "RF3.13": 0.5454166272169992,
+          "RF3.14": 0.6294949863681554,
+          "RF3.2": 0.005729250377145001,
+          "RF3.3": 0.0033135327354486543,
+          "RF3.4": 0.060163461520462036,
+          "RF3.5": 0.0036343875143436404,
+          "RF3.6": 0.003345989314181841,
+          "RF3.7": 0.003432470987836611,
+          "RF3.8": 0.0036458995207295786,
+          "RF3.9": 0.003998826948328094
+        },
+        "threshold": 0.5
+      },
+      "doc_type": {
+        "type": "choice",
+        "choice": "freelance_agreement",
+        "probabilities": {
+          "employment_contract": 0.0005,
+          "freelance_agreement": 0.9942,
+          "funding_terms": 0.0007,
+          "invoice": 0.0006,
+          "job_offer": 0.0006,
+          "loan_credit": 0.0005,
+          "nda": 0.0006,
+          "other": 0.0007,
+          "sponsorship_deal": 0.0006,
+          "tenancy_lease": 0.0005,
+          "terms_conditions": 0.0004
+        },
+        "confidence": 0.9937
+      },
+      "green_signals": {
+        "type": "multiselect",
+        "selected": [
+          "G1",
+          "G2",
+          "G3",
+          "G4"
+        ],
+        "probabilities": {
+          "G1": 0.9552855944864711,
+          "G2": 0.8091947939656875,
+          "G3": 0.9691356587500999,
+          "G4": 0.9839876128388031,
+          "G5": 0.21431768628411152,
+          "G6": 0.006188409004237672
+        },
+        "threshold": 0.5
+      }
+    },
+    "highConfidenceIds": [],
+    "lowConfidenceIds": [
+      "RF3.13",
+      "RF3.14",
+      "SI9"
+    ],
+    "mergedSignals": [],
+    "greenSignals": [
+      "G1",
+      "G2",
+      "G3",
+      "G4"
+    ],
+    "docType": "other",
+    "meta": {
+      "credits": 0,
+      "modelMs": 537,
+      "costUsd": 0.004382,
+      "costBasis": "reference",
+      "transport": "cache",
+      "cached": true
+    }
+  },
+  "followUpAnswers": {},
+  "confirmedIds": [],
+  "fill": {
+    "items": [],
+    "meta": {
+      "credits": 0,
+      "cached": true,
+      "modelMs": 0
+    }
+  },
+  "verify": {
+    "verifiedItems": [],
+    "claims": [],
+    "meta": {
+      "credits": 0,
+      "cached": true,
+      "modelMs": 0
+    }
+  },
+  "fair": {
+    "clauses": [],
+    "allFactsKept": true,
+    "unsupportedFacts": [],
+    "meta": {
+      "credits": 0,
+      "cached": true,
+      "modelMs": 0
+    }
+  },
+  "scoreResult": {
+    "signScore": 74,
+    "color": "amber",
+    "label": "ASK FIRST",
+    "headline": "Ask first. A few items should be clarified before signing.",
+    "totalPoints": 1,
+    "breakdown": [
+      {
+        "reason": "A promise in chat isn't in the contract",
+        "points": 1
+      }
+    ]
+  },
+  "ask": {
+    "question": "When do I get paid?",
+    "response": {
+      "answer": "Invoices are payable within 60 days of receipt",
+      "verdict": "grounded",
+      "grounded": 0.9977,
+      "keptClauseIds": [
+        "c3",
+        "c4",
+        "c7"
+      ],
+      "keptClauses": [
+        {
+          "id": "c3",
+          "title": "2. Fee",
+          "text": "2. **Fee.** GBP 4,500, paid in two equal parts: GBP 2,250 on signing and GBP 2,250 on final delivery.",
+          "startOffset": 470,
+          "endOffset": 571,
+          "relevance_score": 0.9948,
+          "action": "use"
+        },
+        {
+          "id": "c4",
+          "title": "3. Payment terms",
+          "text": "3. **Payment terms.** Invoices are payable within 60 days of receipt.\n\n4. **Revisions.** The fee includes two rounds of revisions. Further rounds are charged at the Contractor's day rate of GBP 400.",
+          "startOffset": 572,
+          "endOffset": 770,
+          "relevance_score": 0.9893,
+          "action": "use"
+        },
+        {
+          "id": "c7",
+          "title": "7. Termination",
+          "text": "7. **Termination.** Either party may end this Agreement with 14 days' written notice. The Client pays for all work completed up to the end date.",
+          "startOffset": 1068,
+          "endOffset": 1212,
+          "relevance_score": 0.1197,
+          "action": "expand"
+        }
+      ],
+      "meta": {
+        "credits": 0,
+        "cached": true,
+        "modelMs": 157
+      }
+    }
+  },
+  "promises": {
+    "hasInjection": false,
+    "items": [
+      {
+        "promise": "Fee is £4,500, half upfront, half on delivery.",
+        "status": "kept",
+        "contractQuote": "GBP 4,500, paid in two equal parts: GBP 2,250 on signing and GBP 2,250 on final delivery.",
+        "evidenceStart": 482,
+        "evidenceEnd": 571,
+        "confidence": 0.999
+      },
+      {
+        "promise": "We pay invoices within 14 days, always.",
+        "status": "broken",
+        "contractQuote": "Invoices are payable within 60 days of receipt.",
+        "evidenceStart": 594,
+        "evidenceEnd": 641,
+        "confidence": 1
+      },
+      {
+        "promise": "Two rounds of revisions included, extra rounds at your day rate.",
+        "status": "kept",
+        "contractQuote": "**Revisions.** The fee includes two rounds of revisions."
+      },
+      {
+        "promise": "You can of course show the work in your portfolio once we launch.",
+        "status": "not_in_contract",
+        "contractQuote": ""
+      },
+      {
+        "promise": "Deadline is mid December.",
+        "status": "kept",
+        "contractQuote": "Final delivery by 15 December 2026.",
+        "evidenceStart": 787,
+        "evidenceEnd": 822,
+        "confidence": 0.915
+      }
+    ],
+    "brokenCount": 1,
+    "meta": {
+      "credits": 0,
+      "modelMs": 811,
+      "cached": true
+    }
+  }
+}

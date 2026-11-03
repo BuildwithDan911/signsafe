@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { callClocked } from "@/server/clocked";
+import { checkRateLimit } from "@/server/store";
+import { formatApiError } from "@/server/errors";
 
 export const maxDuration = 60;
 
@@ -42,6 +44,28 @@ function removeEvidenceSpans(
 
 export async function POST(req: NextRequest) {
   try {
+    const skipRateLimit = req.headers.get("x-skip-ratelimit");
+    if (!skipRateLimit) {
+      const forwarded = req.headers.get("x-forwarded-for");
+      const ip = (
+        forwarded
+          ? forwarded.split(",")[0].trim()
+          : req.headers.get("x-real-ip") || "127.0.0.1"
+      ).trim();
+      const rl = await checkRateLimit(ip);
+      if (!rl.allowed) {
+        return NextResponse.json(
+          {
+            error:
+              "Rate limit reached: at most 5 live checks per hour. You can view Judge Mode to explore recorded runs.",
+            code: 429,
+            resetSeconds: rl.resetSeconds,
+          },
+          { status: 429 }
+        );
+      }
+    }
+
     const body = await req.json();
     const { text, pdfBase64, sourceType } = body;
 
@@ -93,9 +117,14 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    const isInjection =
+      data.verdict === "injection" ||
+      (typeof data.injection === "number" ? data.injection >= 0.5 : Boolean(data.injection));
+
     return NextResponse.json({
-      injection: data.injection || data.verdict === "injection",
-      verdict: data.verdict || (data.injection ? "injection" : "safe"),
+      injection: isInjection,
+      injectionScore: typeof data.injection === "number" ? data.injection : undefined,
+      verdict: data.verdict || (isInjection ? "injection" : "safe"),
       category: data.category,
       severity: data.severity,
       evidence: evidenceList,
@@ -105,9 +134,6 @@ export async function POST(req: NextRequest) {
       meta: clockedRes.meta,
     });
   } catch (err: any) {
-    return NextResponse.json(
-      { error: err.message || "Guard check failed" },
-      { status: 500 }
-    );
+    return formatApiError(err).response;
   }
 }

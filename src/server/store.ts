@@ -120,3 +120,107 @@ export async function getDailyCreditsUsed(): Promise<number> {
   const total = await storeGet<number>(key);
   return total || 0;
 }
+
+export interface RateLimitResult {
+  allowed: boolean;
+  count: number;
+  remaining: number;
+  resetSeconds: number;
+}
+
+export async function checkRateLimit(
+  ip: string,
+  limit: number = 5,
+  windowSeconds: number = 3600
+): Promise<RateLimitResult> {
+  const safeIp = ip.trim() || "127.0.0.1";
+  const key = `ratelimit:check:${safeIp}`;
+  const now = Date.now();
+
+  if (redisClient) {
+    try {
+      const count = await redisClient.incr(key);
+      if (count === 1) {
+        await redisClient.expire(key, windowSeconds);
+      }
+      let ttl = await redisClient.ttl(key);
+      if (ttl < 0) ttl = windowSeconds;
+      return {
+        allowed: count <= limit,
+        count,
+        remaining: Math.max(0, limit - count),
+        resetSeconds: ttl,
+      };
+    } catch (err) {
+      console.warn(`[store] Redis rate limit error for key ${key}:`, err);
+    }
+  }
+
+  // Disk cache fallback
+  try {
+    ensureCacheDir();
+    const safeKey = key.replace(/[^a-zA-Z0-9_\-]/g, "_");
+    const filePath = path.join(CACHE_DIR, `${safeKey}.json`);
+    let data: { count: number; expiresAt: number } = {
+      count: 0,
+      expiresAt: now + windowSeconds * 1000,
+    };
+
+    if (fs.existsSync(filePath)) {
+      try {
+        const parsed = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+        if (parsed.expiresAt && parsed.expiresAt > now) {
+          data = parsed;
+        }
+      } catch {
+        // file unreadable, reset
+      }
+    }
+
+    data.count += 1;
+    if (!data.expiresAt || data.expiresAt <= now) {
+      data.expiresAt = now + windowSeconds * 1000;
+    }
+
+    fs.writeFileSync(filePath, JSON.stringify(data), "utf-8");
+
+    const resetSeconds = Math.max(1, Math.ceil((data.expiresAt - now) / 1000));
+    return {
+      allowed: data.count <= limit,
+      count: data.count,
+      remaining: Math.max(0, limit - data.count),
+      resetSeconds,
+    };
+  } catch (err) {
+    console.warn(`[store] Disk rate limit error for key ${key}:`, err);
+    return {
+      allowed: true,
+      count: 1,
+      remaining: limit - 1,
+      resetSeconds: windowSeconds,
+    };
+  }
+}
+
+export async function resetRateLimit(ip: string): Promise<void> {
+  const safeIp = ip.trim() || "127.0.0.1";
+  const key = `ratelimit:check:${safeIp}`;
+  if (redisClient) {
+    try {
+      await redisClient.del(key);
+    } catch (err) {
+      console.warn(`[store] Redis del error for key ${key}:`, err);
+    }
+  }
+  try {
+    ensureCacheDir();
+    const safeKey = key.replace(/[^a-zA-Z0-9_\-]/g, "_");
+    const filePath = path.join(CACHE_DIR, `${safeKey}.json`);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+  } catch (err) {
+    console.warn(`[store] Disk del error for key ${key}:`, err);
+  }
+}
+

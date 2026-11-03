@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { callClocked } from "@/server/clocked";
+import { formatApiError } from "@/server/errors";
 
 export const maxDuration = 60;
 
@@ -231,9 +232,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (err: any) {
     console.error("Promise vs paper error:", err);
-    return NextResponse.json(
-      { error: err.message || "Promise check failed" },
-      { status: 500 }
-    );
+    return formatApiError(err).response;
   }
 }

@@ -1,0 +1,453 @@
+{
+  "sampleId": "tenancy_compare",
+  "title": "Tenancy Agreement: What Changed?",
+  "recordedAt": "2026-11-03T18:49:47.385Z",
+  "totalCredits": 0,
+  "text1": "> **SYNTHETIC DEMO DOCUMENT (version 1 of 2). Fictional parties, not legal advice.**\n\n# Shared Apartment Tenancy Agreement, Version 1 (sent 20 Oct 2026)\n**Landlord:** Bright Homes Property Ltd (fictional) · **Tenant:** Chidi Okafor (fictional)\n\n1. **Rent.** ₦1,200,000 per year, payable yearly in advance.\n2. **Term.** 12 months from 1 November 2026.\n3. **Renewal.** The tenancy ends at the end of the Term unless both parties agree in writing to renew.\n4. **Rent changes.** Rent is fixed for the Term. Any increase on renewal requires 3 months' written notice.\n5. **Deposit.** A caution deposit of ₦150,000 is refundable within 14 days of move-out, less documented repair costs.\n6. **Repairs.** The Landlord is responsible for structural repairs, plumbing and electrical faults.\n7. **Notice to leave.** Either party may end the tenancy with 1 month's written notice.\n8. **Disputes.** Disputes go to the Lagos State Rent Tribunal or a court of competent jurisdiction.\n",
+  "text2": "> **SYNTHETIC DEMO DOCUMENT (version 2 of 2). \"Final copy, only formatting fixed,\" says the landlord.**\n\n# Shared Apartment Tenancy Agreement, Version 2 (sent 2 Nov 2026)\n**Landlord:** Bright Homes Property Ltd (fictional) · **Tenant:** Chidi Okafor (fictional)\n\n1. **Rent.** ₦1,200,000 per year, payable yearly in advance.\n2. **Term.** 12 months from 1 November 2026.\n3. **Renewal.** The tenancy renews automatically for further 12-month terms, and the next year's rent is due on renewal unless the Tenant gives notice at least 90 days before the end of the Term.\n4. **Rent changes.** The Landlord may review the rent at any time on 14 days' notice.\n5. **Deposit.** A caution deposit of ₦150,000, of which ₦100,000 is a non-refundable administrative fee.\n6. **Repairs.** The Landlord is responsible for structural repairs, plumbing and electrical faults.\n7. **Notice to leave.** Either party may end the tenancy with 1 month's written notice.\n8. **Disputes.** All disputes shall be resolved by binding arbitration before an arbitrator nominated by the Landlord, and the Tenant waives the right to go to court.\n",
+  "compare": {
+    "changes": [
+      {
+        "id": "chg1",
+        "clauseNumber": "3",
+        "title": "3. Renewal",
+        "beforeText": "3. **Renewal.** The tenancy ends at the end of the Term unless both parties agree in writing to renew.",
+        "afterText": "3. **Renewal.** The tenancy renews automatically for further 12-month terms, and the next year's rent is due on renewal unless the Tenant gives notice at least 90 days before the end of the Term.",
+        "diff": [
+          {
+            "count": 10,
+            "added": false,
+            "removed": false,
+            "value": "3. **Renewal.** The tenancy "
+          },
+          {
+            "count": 1,
+            "added": false,
+            "removed": true,
+            "value": "ends"
+          },
+          {
+            "count": 25,
+            "added": true,
+            "removed": false,
+            "value": "renews automatically for further 12-month terms, and the next year's rent is due on renewal unless the Tenant gives notice"
+          },
+          {
+            "count": 1,
+            "added": false,
+            "removed": false,
+            "value": " at "
+          },
+          {
+            "count": 4,
+            "added": true,
+            "removed": false,
+            "value": "least 90 days before "
+          },
+          {
+            "count": 5,
+            "added": false,
+            "removed": false,
+            "value": "the end of the Term"
+          },
+          {
+            "count": 8,
+            "added": false,
+            "removed": true,
+            "value": " unless both parties agree in writing to renew"
+          },
+          {
+            "count": 1,
+            "added": false,
+            "removed": false,
+            "value": "."
+          }
+        ],
+        "verdict": "worse",
+        "confidence": 0.9388,
+        "compareFinding": {
+          "kind": "rule_or_condition",
+          "confidence": 0.9982
+        },
+        "askMessage": "Version 2 changes clause 3 from 'The tenancy ends at the end of the Term unless both parties agree in writing to renew.' to 'The tenancy renews automatically for further 12-month terms, and the next year's rent is due on renewal unless the Tenant gives notice at least 90 days before the end of the Term.'. Can we keep the original wording?",
+        "probabilities": {
+          "better": 0.0365,
+          "neutral": 0.0247,
+          "worse": 0.9388
+        }
+      },
+      {
+        "id": "chg2",
+        "clauseNumber": "4",
+        "title": "4. Rent changes",
+        "beforeText": "4. **Rent changes.** Rent is fixed for the Term. Any increase on renewal requires 3 months' written notice.",
+        "afterText": "4. **Rent changes.** The Landlord may review the rent at any time on 14 days' notice.",
+        "diff": [
+          {
+            "count": 9,
+            "added": false,
+            "removed": false,
+            "value": "4. **Rent changes.** "
+          },
+          {
+            "count": 4,
+            "added": false,
+            "removed": true,
+            "value": "Rent is fixed for"
+          },
+          {
+            "count": 4,
+            "added": true,
+            "removed": false,
+            "value": "The Landlord may review"
+          },
+          {
+            "count": 1,
+            "added": false,
+            "removed": false,
+            "value": " the "
+          },
+          {
+            "count": 4,
+            "added": false,
+            "removed": true,
+            "value": "Term. Any increase"
+          },
+          {
+            "count": 4,
+            "added": true,
+            "removed": false,
+            "value": "rent at any time"
+          },
+          {
+            "count": 1,
+            "added": false,
+            "removed": false,
+            "value": " on "
+          },
+          {
+            "count": 4,
+            "added": false,
+            "removed": true,
+            "value": "renewal requires 3 months"
+          },
+          {
+            "count": 2,
+            "added": true,
+            "removed": false,
+            "value": "14 days"
+          },
+          {
+            "count": 1,
+            "added": false,
+            "removed": false,
+            "value": "' "
+          },
+          {
+            "count": 1,
+            "added": false,
+            "removed": true,
+            "value": "written "
+          },
+          {
+            "count": 2,
+            "added": false,
+            "removed": false,
+            "value": "notice."
+          }
+        ],
+        "verdict": "worse",
+        "confidence": 0.9969,
+        "compareFinding": {
+          "kind": "rule_or_condition",
+          "confidence": 0.9977
+        },
+        "askMessage": "Version 2 changes clause 4 from 'Rent is fixed for the Term. Any increase on renewal requires 3 months' written notice.' to 'The Landlord may review the rent at any time on 14 days' notice.'. Can we keep the original wording?",
+        "probabilities": {
+          "better": 0.0017,
+          "neutral": 0.0014,
+          "worse": 0.9969
+        }
+      },
+      {
+        "id": "chg3",
+        "clauseNumber": "5",
+        "title": "5. Deposit",
+        "beforeText": "5. **Deposit.** A caution deposit of ₦150,000 is refundable within 14 days of move-out, less documented repair costs.",
+        "afterText": "5. **Deposit.** A caution deposit of ₦150,000, of which ₦100,000 is a non-refundable administrative fee.",
+        "diff": [
+          {
+            "count": 16,
+            "added": false,
+            "removed": false,
+            "value": "5. **Deposit.** A caution deposit of ₦150,000"
+          },
+          {
+            "count": 5,
+            "added": false,
+            "removed": true,
+            "value": " is refundable within 14 days"
+          },
+          {
+            "count": 1,
+            "added": true,
+            "removed": false,
+            "value": ","
+          },
+          {
+            "count": 1,
+            "added": false,
+            "removed": false,
+            "value": " of "
+          },
+          {
+            "count": 3,
+            "added": false,
+            "removed": true,
+            "value": "move-out"
+          },
+          {
+            "count": 3,
+            "added": true,
+            "removed": false,
+            "value": "which ₦100"
+          },
+          {
+            "count": 1,
+            "added": false,
+            "removed": false,
+            "value": ","
+          },
+          {
+            "count": 4,
+            "added": false,
+            "removed": true,
+            "value": " less documented repair costs"
+          },
+          {
+            "count": 8,
+            "added": true,
+            "removed": false,
+            "value": "000 is a non-refundable administrative fee"
+          },
+          {
+            "count": 1,
+            "added": false,
+            "removed": false,
+            "value": "."
+          }
+        ],
+        "verdict": "worse",
+        "confidence": 0.9956,
+        "compareFinding": {
+          "kind": "rule_or_condition",
+          "confidence": 0.9962
+        },
+        "askMessage": "Version 2 changes clause 5 from 'A caution deposit of ₦150,000 is refundable within 14 days of move-out, less documented repair costs.' to 'A caution deposit of ₦150,000, of which ₦100,000 is a non-refundable administrative fee.'. Can we keep the original wording?",
+        "probabilities": {
+          "better": 0.0025,
+          "neutral": 0.0019,
+          "worse": 0.9956
+        }
+      },
+      {
+        "id": "chg4",
+        "clauseNumber": "8",
+        "title": "8. Disputes",
+        "beforeText": "8. **Disputes.** Disputes go to the Lagos State Rent Tribunal or a court of competent jurisdiction.",
+        "afterText": "8. **Disputes.** All disputes shall be resolved by binding arbitration before an arbitrator nominated by the Landlord, and the Tenant waives the right to go to court.",
+        "diff": [
+          {
+            "count": 8,
+            "added": false,
+            "removed": false,
+            "value": "8. **Disputes.** "
+          },
+          {
+            "count": 1,
+            "added": false,
+            "removed": true,
+            "value": "Disputes"
+          },
+          {
+            "count": 23,
+            "added": true,
+            "removed": false,
+            "value": "All disputes shall be resolved by binding arbitration before an arbitrator nominated by the Landlord, and the Tenant waives the right to"
+          },
+          {
+            "count": 2,
+            "added": false,
+            "removed": false,
+            "value": " go to "
+          },
+          {
+            "count": 7,
+            "added": false,
+            "removed": true,
+            "value": "the Lagos State Rent Tribunal or a "
+          },
+          {
+            "count": 1,
+            "added": false,
+            "removed": false,
+            "value": "court"
+          },
+          {
+            "count": 3,
+            "added": false,
+            "removed": true,
+            "value": " of competent jurisdiction"
+          },
+          {
+            "count": 1,
+            "added": false,
+            "removed": false,
+            "value": "."
+          }
+        ],
+        "verdict": "worse",
+        "confidence": 0.97,
+        "compareFinding": {
+          "kind": "rule_or_condition",
+          "confidence": 0.9918
+        },
+        "askMessage": "Version 2 changes clause 8 from 'Disputes go to the Lagos State Rent Tribunal or a court of competent jurisdiction.' to 'All disputes shall be resolved by binding arbitration before an arbitrator nominated by the Landlord, and the Tenant waives the right to go to court.'. Can we keep the original wording?",
+        "probabilities": {
+          "better": 0.0101,
+          "neutral": 0.0199,
+          "worse": 0.97
+        }
+      }
+    ],
+    "wordingOnlyChanges": [
+      {
+        "id": "word_1",
+        "clauseNumber": "",
+        "title": "SYNTHETIC DEMO DOCUMENT (version 1 of 2).",
+        "beforeText": "> **SYNTHETIC DEMO DOCUMENT (version 1 of 2). Fictional parties, not legal advice.**",
+        "afterText": "> **SYNTHETIC DEMO DOCUMENT (version 2 of 2). \"Final copy, only formatting fixed,\" says the landlord.**",
+        "diff": [
+          {
+            "count": 8,
+            "added": false,
+            "removed": false,
+            "value": "> **SYNTHETIC DEMO DOCUMENT (version "
+          },
+          {
+            "count": 1,
+            "added": false,
+            "removed": true,
+            "value": "1"
+          },
+          {
+            "count": 1,
+            "added": true,
+            "removed": false,
+            "value": "2"
+          },
+          {
+            "count": 4,
+            "added": false,
+            "removed": false,
+            "value": " of 2). "
+          },
+          {
+            "count": 2,
+            "added": false,
+            "removed": true,
+            "value": "Fictional parties"
+          },
+          {
+            "count": 3,
+            "added": true,
+            "removed": false,
+            "value": "\"Final copy"
+          },
+          {
+            "count": 1,
+            "added": false,
+            "removed": false,
+            "value": ", "
+          },
+          {
+            "count": 3,
+            "added": false,
+            "removed": true,
+            "value": "not legal advice"
+          },
+          {
+            "count": 8,
+            "added": true,
+            "removed": false,
+            "value": "only formatting fixed,\" says the landlord"
+          },
+          {
+            "count": 3,
+            "added": false,
+            "removed": false,
+            "value": ".**"
+          }
+        ]
+      },
+      {
+        "id": "word_2",
+        "clauseNumber": "",
+        "title": "Shared Apartment Tenancy Agreement, Version 1 (sent 20",
+        "beforeText": "# Shared Apartment Tenancy Agreement, Version 1 (sent 20 Oct 2026)\n**Landlord:** Bright Homes Property Ltd (fictional) · **Tenant:** Chidi Okafor (fictional)",
+        "afterText": "# Shared Apartment Tenancy Agreement, Version 2 (sent 2 Nov 2026)\n**Landlord:** Bright Homes Property Ltd (fictional) · **Tenant:** Chidi Okafor (fictional)",
+        "diff": [
+          {
+            "count": 7,
+            "added": false,
+            "removed": false,
+            "value": "# Shared Apartment Tenancy Agreement, Version "
+          },
+          {
+            "count": 1,
+            "added": false,
+            "removed": true,
+            "value": "1"
+          },
+          {
+            "count": 1,
+            "added": true,
+            "removed": false,
+            "value": "2"
+          },
+          {
+            "count": 2,
+            "added": false,
+            "removed": false,
+            "value": " (sent "
+          },
+          {
+            "count": 2,
+            "added": false,
+            "removed": true,
+            "value": "20 Oct"
+          },
+          {
+            "count": 2,
+            "added": true,
+            "removed": false,
+            "value": "2 Nov"
+          },
+          {
+            "count": 27,
+            "added": false,
+            "removed": false,
+            "value": " 2026)\n**Landlord:** Bright Homes Property Ltd (fictional) · **Tenant:** Chidi Okafor (fictional)"
+          }
+        ]
+      }
+    ],
+    "sealColor": "red",
+    "summaryText": "4 changes in meaning, 4 worse for you",
+    "meaningUnavailable": false,
+    "meta": {
+      "credits": 0,
+      "cached": true
+    }
+  }
+}

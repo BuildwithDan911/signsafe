@@ -21,6 +21,10 @@ import {
 import { SignDoc } from "@/lib/types";
 import { MergedSignal } from "@/lib/signals";
 import { calculateScore, ScoreResult } from "@/lib/score";
+import JudgeRibbon from "@/components/JudgeRibbon";
+import CreditCounter, { StepCreditInfo } from "@/components/CreditCounter";
+import CreditsModal from "@/components/CreditsModal";
+import { getJudgeSampleById } from "@/lib/judge";
 
 interface StepState {
   id: string;
@@ -64,6 +68,10 @@ export default function ScanPage() {
 
   const [totalCredits, setTotalCredits] = useState<number>(0);
   const [systemAlert, setSystemAlert] = useState<string | null>(null);
+  const [isJudgeMode, setIsJudgeMode] = useState(false);
+  const [judgeRecordedAt, setJudgeRecordedAt] = useState<string | null>(null);
+  const [isCreditsModalOpen, setIsCreditsModalOpen] = useState(false);
+  const [fixtureData, setFixtureData] = useState<any>(null);
   const pipelineStarted = useRef(false);
 
   const [steps, setSteps] = useState<StepState[]>([
@@ -141,9 +149,25 @@ export default function ScanPage() {
     },
   ]);
 
-  // Load doc from sessionStorage
+  // Load doc & judge mode from sessionStorage
   useEffect(() => {
     try {
+      const storedJudge = sessionStorage.getItem("signsafe_judge_mode");
+      if (storedJudge) {
+        const parsedJudge = JSON.parse(storedJudge);
+        setIsJudgeMode(true);
+        setJudgeRecordedAt(parsedJudge.recordedAt || null);
+
+        const storedFixture = sessionStorage.getItem("signsafe_fixture");
+        if (storedFixture) {
+          const parsedFix = JSON.parse(storedFixture);
+          setFixtureData(parsedFix);
+        } else if (parsedJudge.sampleId) {
+          const sample = getJudgeSampleById(parsedJudge.sampleId);
+          if (sample) setFixtureData(sample.fixture);
+        }
+      }
+
       const stored = sessionStorage.getItem("signsafe_doc");
       if (stored) {
         const parsedDoc: SignDoc = JSON.parse(stored);
@@ -510,9 +534,282 @@ export default function ScanPage() {
   useEffect(() => {
     if (doc && !pipelineStarted.current) {
       pipelineStarted.current = true;
+      if (isJudgeMode && fixtureData) {
+        runJudgeReplay(fixtureData);
+      } else {
+        runPipeline(doc);
+      }
+    }
+  }, [doc, isJudgeMode, fixtureData]);
+
+  const runJudgeReplay = async (fixture: any) => {
+    updateStep("read", {
+      status: "done",
+      credits: 0,
+      cached: true,
+      summary: "Document ingested into session memory",
+    });
+    await new Promise((r) => setTimeout(r, 400));
+
+    // 1. Guard
+    updateStep("guard", { status: "running" });
+    await new Promise((r) => setTimeout(r, 400));
+    const guard = fixture.guard || {};
+    if (guard.injection) {
+      setHasInjection(true);
+      setQuarantinedQuotes(guard.quarantinedQuotes || []);
+    }
+    const targetClean = guard.cleanText || fixture.cleanText || fixture.doc?.text || "";
+    setCleanText(targetClean);
+    updateStep("guard", {
+      status: "done",
+      credits: 0,
+      cached: true,
+      summary: guard.injection
+        ? `Flagged ${guard.quarantinedQuotes?.length || 1} AI prompt injection span(s)`
+        : "No prompt injection or AI-trick text detected",
+    });
+
+    // 2. Inspect
+    updateStep("inspect", { status: "running" });
+    await new Promise((r) => setTimeout(r, 400));
+    const inspect = fixture.inspect || {};
+    setInspectData(inspect);
+    updateStep("inspect", {
+      status: "done",
+      credits: 0,
+      cached: true,
+      summary: inspect.hasMalicious
+        ? "Suspicious embedded command detected"
+        : inspect.skipped
+        ? "Skipped (no embedded code found)"
+        : "Code clean",
+    });
+
+    // 3. Protect
+    updateStep("protect", { status: "running" });
+    await new Promise((r) => setTimeout(r, 400));
+    const protect = fixture.protect || {};
+    setProtectData(protect);
+    updateStep("protect", {
+      status: "done",
+      credits: 0,
+      cached: true,
+      summary: `Found ${protect.totalCount || 7} personal and contact details`,
+    });
+
+    // 4. Extract
+    updateStep("extract", { status: "running" });
+    await new Promise((r) => setTimeout(r, 400));
+    const extract = fixture.extract || {};
+    setExtractData(extract);
+    const factsCount = Object.keys(extract.fields || {}).filter(
+      (k) => extract.fields[k]?.value !== null
+    ).length;
+    updateStep("extract", {
+      status: "done",
+      credits: 0,
+      cached: true,
+      summary: `Extracted ${factsCount} key contractual terms and entities`,
+    });
+
+    // 5. Decide
+    updateStep("decide", { status: "running" });
+    await new Promise((r) => setTimeout(r, 400));
+    const decide = fixture.decide || {};
+    setDecideData(decide);
+    setMergedSignals(decide.mergedSignals || []);
+    const redCount = (decide.mergedSignals || []).filter((s: any) => s.severity === "red").length;
+    const amberCount = (decide.mergedSignals || []).filter((s: any) => s.severity === "amber").length;
+    updateStep("decide", {
+      status: "done",
+      credits: 0,
+      cached: true,
+      summary: `Identified ${redCount} major warning signs, ${amberCount} caution items`,
+    });
+
+    // 6. Fill
+    updateStep("fill", { status: "running" });
+    await new Promise((r) => setTimeout(r, 400));
+    const fill = fixture.fill || {};
+    setFillData(fill);
+    setFillItems(fill.items || []);
+    const quoteCount = (fill.items || []).filter((it: any) => it.quote).length;
+    updateStep("fill", {
+      status: "done",
+      credits: 0,
+      cached: true,
+      summary: `Extracted ${quoteCount} clauses, explanations & negotiation messages`,
+    });
+
+    // 7. Verify
+    updateStep("verify", { status: "running" });
+    await new Promise((r) => setTimeout(r, 400));
+    const verify = fixture.verify || {};
+    setVerifyData(verify);
+    setVerifiedItems(verify.verifiedItems || []);
+    const verifiedCount = (verify.verifiedItems || []).filter((v: any) => v.verified).length;
+    updateStep("verify", {
+      status: "done",
+      credits: 0,
+      cached: true,
+      summary: `Double-checked explanations (${verifiedCount} verified against text ✓)`,
+    });
+
+    // Handle follow-up answers if in fixture
+    if (fixture.followUpAnswers) {
+      setFollowUpAnswers(fixture.followUpAnswers);
+      setConfirmedIds(
+        fixture.confirmedIds ||
+          Object.keys(fixture.followUpAnswers).filter((k) => fixture.followUpAnswers[k] === "yes")
+      );
+    }
+    setQuestionsDone(true);
+
+    // Auto-proceed to results after brief beat
+    setTimeout(() => {
+      goToResultsWithFixture(fixture);
+    }, 600);
+  };
+
+  const retrySingleStep = async (stepId: string) => {
+    if (!doc) return;
+    updateStep(stepId, { status: "running", error: undefined });
+    if (stepId === "guard") {
+      try {
+        const res = await fetch("/api/check/guard", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: doc.text,
+            pdfBase64: doc.pdfBase64,
+            sourceType: doc.sourceType,
+          }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          if (data.injection) {
+            setHasInjection(true);
+            setQuarantinedQuotes(data.quarantinedQuotes || []);
+          }
+          if (data.cleanText) setCleanText(data.cleanText);
+          updateStep("guard", {
+            status: "done",
+            credits: data.meta?.credits || 0,
+            cached: !!data.meta?.cached,
+            summary: data.injection
+              ? "Flagged AI prompt injection span"
+              : "No prompt injection detected",
+          });
+        } else {
+          updateStep("guard", {
+            status: "error",
+            error: data.error,
+            summary: "Hidden-trick check unavailable",
+          });
+        }
+      } catch (e: any) {
+        updateStep("guard", {
+          status: "error",
+          error: e.message,
+          summary: "Hidden-trick check unavailable",
+        });
+      }
+    } else if (stepId === "inspect") {
+      try {
+        const res = await fetch("/api/check/inspect", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ scripts: doc.scripts || [] }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          setInspectData(data);
+          updateStep("inspect", {
+            status: "done",
+            credits: data.meta?.credits || 0,
+            cached: !!data.meta?.cached,
+            summary: data.skipped
+              ? "Skipped (no embedded code found)"
+              : "Code scan completed",
+          });
+        } else {
+          updateStep("inspect", {
+            status: "error",
+            error: data.error,
+            summary: "Code inspection unavailable",
+          });
+        }
+      } catch (e: any) {
+        updateStep("inspect", {
+          status: "error",
+          error: e.message,
+          summary: "Code inspection unavailable",
+        });
+      }
+    } else if (stepId === "protect") {
+      try {
+        const res = await fetch("/api/check/protect", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ cleanText: cleanText || doc.text }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          setProtectData(data);
+          updateStep("protect", {
+            status: "done",
+            credits: data.meta?.credits || 0,
+            cached: !!data.meta?.cached,
+            summary: `Found ${data.totalCount || 0} personal details`,
+          });
+        } else {
+          updateStep("protect", {
+            status: "error",
+            error: data.error,
+            summary: "Redaction unavailable",
+          });
+        }
+      } catch (e: any) {
+        updateStep("protect", {
+          status: "error",
+          error: e.message,
+          summary: "Redaction unavailable",
+        });
+      }
+    } else {
       runPipeline(doc);
     }
-  }, [doc]);
+  };
+
+  const handleShowClosestRecordedRun = () => {
+    const text = (doc?.text || "").toLowerCase();
+    const name = (doc?.fileName || "").toLowerCase();
+    let sampleId: "job_offer" | "freelance_contract" = "job_offer";
+    if (
+      name.includes("freelance") ||
+      text.includes("contractor") ||
+      text.includes("design") ||
+      text.includes("invoice")
+    ) {
+      sampleId = "freelance_contract";
+    }
+    const sample = getJudgeSampleById(sampleId);
+    if (sample) {
+      sessionStorage.setItem(
+        "signsafe_judge_mode",
+        JSON.stringify({
+          sampleId: sample.id,
+          recordedAt: sample.fixture.recordedAt,
+          totalCredits: sample.fixture.totalCredits,
+        })
+      );
+      sessionStorage.setItem("signsafe_fixture", JSON.stringify(sample.fixture));
+      sessionStorage.setItem("signsafe_doc", JSON.stringify(sample.fixture.doc));
+      sessionStorage.removeItem("signsafe_audit");
+      window.location.reload();
+    }
+  };
 
   // Pick up to 3 follow-up questions
   const questionsToAsk = React.useMemo(() => {
@@ -565,12 +862,17 @@ export default function ScanPage() {
 
   // Navigate to results
   const goToResults = () => {
+    const failedSafety = ["guard", "inspect", "protect"].filter((id) =>
+      steps.some((s) => s.id === id && s.status === "error")
+    );
+
     const scoreResult: ScoreResult = calculateScore({
       mergedSignals,
       guardInjection: hasInjection,
       inspectMalicious: inspectData?.hasMalicious,
       confirmedSignalIds: confirmedIds,
       greenSignalsCount: decideData?.greenSignals?.length || 0,
+      failedSafetySteps: failedSafety,
     });
 
     const auditPayload = {
@@ -589,7 +891,51 @@ export default function ScanPage() {
       mergedSignals,
       confirmedIds,
       scoreResult,
-      totalCredits,
+      totalCredits: isJudgeMode ? 0 : totalCredits,
+      isJudgeMode: Boolean(isJudgeMode),
+      recordedAt: judgeRecordedAt || new Date().toISOString(),
+      timestamp: new Date().toISOString(),
+    };
+
+    sessionStorage.setItem("signsafe_audit", JSON.stringify(auditPayload));
+    router.push("/results");
+  };
+
+  const goToResultsWithFixture = (fixture: any) => {
+    const scoreResult: ScoreResult =
+      fixture.scoreResult ||
+      calculateScore({
+        mergedSignals: fixture.decide?.mergedSignals || [],
+        guardInjection: fixture.guard?.injection,
+        inspectMalicious: fixture.inspect?.hasMalicious,
+        confirmedSignalIds: fixture.confirmedIds || [],
+        greenSignalsCount: fixture.decide?.greenSignals?.length || 0,
+      });
+
+    const auditPayload = {
+      doc: fixture.doc || doc,
+      cleanText: fixture.cleanText || fixture.guard?.cleanText || doc?.text,
+      hasInjection: Boolean(fixture.guard?.injection),
+      quarantinedQuotes: fixture.guard?.quarantinedQuotes || [],
+      inspectData: fixture.inspect,
+      protectData: fixture.protect,
+      extractData: fixture.extract,
+      decideData: fixture.decide,
+      fillData: fixture.fill,
+      verifyData: fixture.verify,
+      fairData: fixture.fair,
+      fillItems: fixture.fill?.items || [],
+      verifiedItems: fixture.verify?.verifiedItems || [],
+      mergedSignals: fixture.decide?.mergedSignals || [],
+      confirmedIds: fixture.confirmedIds || [],
+      followUpAnswers: fixture.followUpAnswers || {},
+      scoreResult,
+      totalCredits: 0,
+      fixtureCredits: fixture.totalCredits || 0,
+      isJudgeMode: true,
+      recordedAt: judgeRecordedAt || fixture.recordedAt || new Date().toISOString(),
+      askData: fixture.ask,
+      promisesData: fixture.promises,
       timestamp: new Date().toISOString(),
     };
 
@@ -644,8 +990,19 @@ export default function ScanPage() {
 
   const activeQuestion = questionsToAsk[currentQuestionIdx];
 
+  const stepsBreakdown: StepCreditInfo[] = steps
+    .filter((s) => s.status === "done" && s.id !== "read")
+    .map((s) => ({
+      name: s.name.split("(")[0].trim(),
+      credits: isJudgeMode ? 0 : s.credits,
+      cached: isJudgeMode ? true : s.cached,
+    }));
+
   return (
     <div className="min-h-screen bg-[#FBF8F1] text-[#14213D] flex flex-col justify-between selection:bg-[#E8A33D]/25 font-sans">
+      {/* Judge Mode Top Ribbon */}
+      {isJudgeMode && <JudgeRibbon recordedAt={judgeRecordedAt || undefined} />}
+
       {/* Top Header */}
       <header className="w-full border-b border-[#14213D]/10 bg-[#FBF8F1]/90 backdrop-blur-md sticky top-0 z-40">
         <div className="max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-4">
@@ -657,12 +1014,14 @@ export default function ScanPage() {
             <span>SignSafe Home</span>
           </Link>
 
-          {/* Running Credit Counter */}
+          {/* Running Credit Counter with Tooltip */}
           <div className="flex items-center gap-3">
-            <div className="px-3 py-1.5 rounded-lg bg-[#14213D] text-[#FBF8F1] text-xs font-mono font-medium shadow-xs">
-              This check:{" "}
-              <strong className="text-[#E8A33D]">{totalCredits}</strong> credits
-            </div>
+            <CreditCounter
+              totalCredits={isJudgeMode ? 0 : totalCredits}
+              isJudgeMode={isJudgeMode}
+              stepsBreakdown={stepsBreakdown}
+              onOpenCreditsModal={() => setIsCreditsModalOpen(true)}
+            />
             <div className="hidden sm:inline-flex items-center gap-1.5 text-xs text-stone-500 font-mono">
               <span className="w-1.5 h-1.5 rounded-full bg-[#2FA36B]" />
               Not legal advice
@@ -673,24 +1032,26 @@ export default function ScanPage() {
 
       {/* Main Content */}
       <main className="flex-1 w-full max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-6">
-        {/* System Alert (Quota / Mock / Paused) */}
+        {/* System Alert (Quota / Mock / Paused / Graceful fallback) */}
         {systemAlert && (
-          <div className="p-4 bg-amber-50 border border-amber-300 rounded-xl flex items-start justify-between gap-3 text-amber-950 text-sm">
-            <div className="flex items-start gap-2.5">
-              <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div className="p-4 sm:p-5 bg-amber-50 border-2 border-amber-300 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-amber-950 text-sm shadow-xs">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
               <div>
-                <strong>Notice: {systemAlert}</strong>
-                <p className="text-xs text-amber-900 mt-0.5">
-                  Live Clocked requests are paused. You can inspect pre-recorded runs in Judge Mode.
+                <strong className="text-[#14213D] block text-sm sm:text-base">
+                  Notice: {systemAlert}
+                </strong>
+                <p className="text-xs sm:text-sm text-stone-700 mt-0.5">
+                  Live Clocked requests are paused or unavailable. You can view the pre-recorded live run instead.
                 </p>
               </div>
             </div>
-            <Link
-              href="/"
-              className="px-3 py-1 bg-amber-200 hover:bg-amber-300 rounded-md text-xs font-bold transition whitespace-nowrap"
+            <button
+              onClick={handleShowClosestRecordedRun}
+              className="px-4 py-2 bg-[#14213D] hover:bg-[#14213D]/90 text-[#FBF8F1] rounded-xl text-xs sm:text-sm font-semibold transition shrink-0 cursor-pointer shadow-xs"
             >
-              Try Judge Mode
-            </Link>
+              Show the recorded run instead
+            </button>
           </div>
         )}
 
@@ -863,13 +1224,18 @@ export default function ScanPage() {
                     </span>
                   )}
                   {step.status === "error" && (
-                    <button
-                      onClick={() => runPipeline(doc)}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-amber-200 hover:bg-amber-300 text-amber-900 font-medium transition cursor-pointer"
-                    >
-                      <RotateCw className="w-3 h-3" />
-                      <span>Retry</span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-[#E8A33D]/20 text-[#14213D] border border-[#E8A33D]/30">
+                        not checked
+                      </span>
+                      <button
+                        onClick={() => retrySingleStep(step.id)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-amber-200 hover:bg-amber-300 text-amber-900 font-medium transition cursor-pointer text-xs"
+                      >
+                        <RotateCw className="w-3 h-3" />
+                        <span>Retry</span>
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -1001,9 +1367,30 @@ export default function ScanPage() {
       </main>
 
       {/* Footer */}
-      <footer className="w-full border-t border-[#14213D]/10 py-6 sm:py-8 bg-[#FBF8F1] text-center text-xs text-[#14213D]/65">
-        SignSafe is not legal advice. It helps you spot things to ask about.
+      <footer className="w-full border-t border-[#14213D]/10 py-6 sm:py-8 bg-[#FBF8F1]">
+        <div className="max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left text-xs sm:text-sm text-[#14213D]/65">
+          <p>SignSafe is not legal advice. It helps you spot things to ask about.</p>
+          <div className="flex items-center gap-4 font-mono text-xs">
+            <button
+              type="button"
+              onClick={() => setIsCreditsModalOpen(true)}
+              className="text-[#14213D] hover:underline cursor-pointer font-semibold"
+            >
+              How credits work
+            </button>
+            <span>•</span>
+            <Link href="/" className="hover:text-[#14213D] transition-colors">
+              Home
+            </Link>
+          </div>
+        </div>
       </footer>
+
+      {/* Credits Modal */}
+      <CreditsModal
+        isOpen={isCreditsModalOpen}
+        onClose={() => setIsCreditsModalOpen(false)}
+      />
     </div>
   );
 }

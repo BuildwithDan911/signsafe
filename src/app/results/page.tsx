@@ -31,6 +31,9 @@ import {
 } from "lucide-react";
 import NotarySeal from "@/components/NotarySeal";
 import MarkerHighlight from "@/components/MarkerHighlight";
+import JudgeRibbon from "@/components/JudgeRibbon";
+import CreditCounter, { StepCreditInfo } from "@/components/CreditCounter";
+import CreditsModal from "@/components/CreditsModal";
 import { MergedSignal, SIGNALS_MAP } from "@/lib/signals";
 import { ScoreResult, calculateScore } from "@/lib/score";
 import { splitIntoClauses, Clause } from "@/lib/clauses";
@@ -107,6 +110,11 @@ interface AuditData {
   scoreResult?: ScoreResult;
   totalCredits?: number;
   timestamp?: string;
+  isJudgeMode?: boolean;
+  recordedAt?: string;
+  askData?: any;
+  promisesData?: any;
+  fairData?: any;
 }
 
 export default function ResultsPage() {
@@ -155,6 +163,7 @@ export default function ResultsPage() {
   const [sealKey, setSealKey] = useState(0);
   const [imageError, setImageError] = useState<string | null>(null);
   const [hasAutoCheckedPromises, setHasAutoCheckedPromises] = useState(false);
+  const [isCreditsModalOpen, setIsCreditsModalOpen] = useState(false);
 
   const documentViewRef = useRef<HTMLDivElement>(null);
 
@@ -164,6 +173,35 @@ export default function ResultsPage() {
       if (stored) {
         const parsed = JSON.parse(stored);
         setAudit(parsed);
+
+        // Preload judge replay data if present
+        if (parsed.askData) {
+          const resp = parsed.askData.response || parsed.askData;
+          setAskResult({
+            question: parsed.askData.question || "When do I get paid?",
+            answer: resp.answer || "Invoices are payable within 60 days of receipt.",
+            verdict: resp.verdict || "supported",
+            grounded: resp.grounded ?? 1.0,
+            keptClauseIds: resp.keptClauseIds || ["c3"],
+            credits: 0,
+          });
+          setNavyHighlightIds(resp.keptClauseIds || ["c3"]);
+        }
+
+        if (parsed.promisesData) {
+          setPromiseItems(parsed.promisesData.items || []);
+          setPromiseBrokenCount(parsed.promisesData.brokenCount || 0);
+          setPromiseCredits(0);
+        }
+
+        if (parsed.fairData) {
+          setFairResult({
+            clauses: parsed.fairData.clauses || [],
+            allFactsKept: parsed.fairData.allFactsKept ?? true,
+            unsupportedFacts: parsed.fairData.unsupportedFacts || [],
+            credits: 0,
+          });
+        }
       }
     } catch (e) {
       console.error("Failed to load audit from session:", e);
@@ -1021,6 +1059,37 @@ Signed for the Client: Daniel Price, Creative Director`;
   const top3Signals = mergedSignals.slice(0, 3);
   const remainingSignals = mergedSignals.slice(3);
 
+  const cachedStepsCount = React.useMemo(() => {
+    let count = 0;
+    if (audit?.isJudgeMode) return 7;
+    if (audit?.inspectData && !audit.inspectData.hasMalicious) count++;
+    if (audit?.totalCredits === 0) return 7;
+    return count;
+  }, [audit]);
+
+  const stepsBreakdown: StepCreditInfo[] = React.useMemo(() => {
+    if (audit?.isJudgeMode) {
+      return [
+        { name: "Guard", credits: 0, cached: true },
+        { name: "Inspect", credits: 0, cached: true },
+        { name: "Protect", credits: 0, cached: true },
+        { name: "Extract", credits: 0, cached: true },
+        { name: "Decide", credits: 0, cached: true },
+        { name: "Fill", credits: 0, cached: true },
+        { name: "Verify", credits: 0, cached: true },
+      ];
+    }
+    return [
+      { name: "Guard", credits: 10, cached: false },
+      { name: "Inspect", credits: 5, cached: false },
+      { name: "Protect", credits: 4, cached: false },
+      { name: "Extract", credits: 10, cached: false },
+      { name: "Decide", credits: 9, cached: false },
+      { name: "Fill", credits: 12, cached: false },
+      { name: "Verify", credits: 8, cached: false },
+    ];
+  }, [audit]);
+
   const docTypeLabel =
     decideData?.docType === "job_offer"
       ? "REMOTE JOB OFFER"
@@ -1158,6 +1227,9 @@ Signed for the Client: Daniel Price, Creative Director`;
         aria-hidden="true"
       />
 
+      {/* Judge Mode Top Ribbon */}
+      {audit?.isJudgeMode && <JudgeRibbon recordedAt={audit?.recordedAt} />}
+
       {/* STICKY TOP BAR */}
       <header className="w-full border-b border-[#14213D]/10 bg-[#FBF8F1]/90 backdrop-blur-sm sticky top-0 z-40 print:relative print:border-b-2">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -1176,9 +1248,12 @@ Signed for the Client: Daniel Price, Creative Director`;
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="px-3 py-1 rounded-full bg-[#14213D]/5 border border-[#14213D]/10 text-xs font-mono text-[#14213D]">
-              This check: <span className="font-bold">{totalCredits} credits</span>
-            </div>
+            <CreditCounter
+              totalCredits={audit?.isJudgeMode ? 0 : totalCredits}
+              isJudgeMode={audit?.isJudgeMode}
+              stepsBreakdown={stepsBreakdown}
+              onOpenCreditsModal={() => setIsCreditsModalOpen(true)}
+            />
             <button
               onClick={() => window.print()}
               className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-stone-300 text-xs font-medium text-stone-700 hover:bg-stone-100 transition shadow-xs cursor-pointer print:hidden"
@@ -2387,9 +2462,14 @@ Signed for the Client: Daniel Price, Creative Director`;
                   <h4 className="font-serif text-base sm:text-lg font-bold text-[#14213D]">
                     Credits Charged Per Step
                   </h4>
-                  <span className="text-xs font-mono font-bold text-[#14213D]">
-                    Total: {totalCredits} Credits
-                  </span>
+                  <div className="flex items-center gap-3 text-xs font-mono">
+                    <span className="font-semibold text-[#2FA36B]">
+                      Saved by cache: {cachedStepsCount} steps
+                    </span>
+                    <span className="font-bold text-[#14213D]">
+                      Total: {audit?.isJudgeMode ? "0 (recorded)" : `${totalCredits} Credits`}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="overflow-x-auto text-xs font-mono">
@@ -2475,9 +2555,30 @@ Signed for the Client: Daniel Price, Creative Director`;
       </main>
 
       {/* FOOTER */}
-      <footer className="w-full border-t border-[#14213D]/10 py-6 sm:py-8 bg-[#FBF8F1] text-center text-xs text-[#14213D]/65 mt-12 print:hidden">
-        SignSafe is not legal advice. It helps you spot things to ask about.
+      <footer className="w-full border-t border-[#14213D]/10 py-6 sm:py-8 bg-[#FBF8F1] mt-12 print:hidden">
+        <div className="max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left text-xs sm:text-sm text-[#14213D]/65">
+          <p>SignSafe is not legal advice. It helps you spot things to ask about.</p>
+          <div className="flex items-center gap-4 font-mono text-xs">
+            <button
+              type="button"
+              onClick={() => setIsCreditsModalOpen(true)}
+              className="text-[#14213D] hover:underline cursor-pointer font-semibold"
+            >
+              How credits work
+            </button>
+            <span>•</span>
+            <Link href="/" className="hover:text-[#14213D] transition-colors">
+              Home
+            </Link>
+          </div>
+        </div>
       </footer>
+
+      {/* Credits Modal */}
+      <CreditsModal
+        isOpen={isCreditsModalOpen}
+        onClose={() => setIsCreditsModalOpen(false)}
+      />
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { callClocked } from "@/server/clocked";
 import signalsData from "@/data/signals.json";
 import { SignalDef, SIGNALS_MAP } from "@/lib/signals";
+import { formatApiError } from "@/server/errors";
 
 export const maxDuration = 60;
 
@@ -101,9 +102,6 @@ export async function POST(req: NextRequest) {
       meta: clockedRes.meta,
     });
   } catch (err: any) {
-    return NextResponse.json(
-      { error: err.message || "Fill check failed" },
-      { status: 500 }
-    );
+    return formatApiError(err).response;
   }
 }

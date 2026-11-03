@@ -20,6 +20,8 @@ import HeroDemoStrip from "@/components/HeroDemoStrip";
 import HowItWorks from "@/components/HowItWorks";
 import TrustRow from "@/components/TrustRow";
 import { shrinkImage, runClientOcr } from "@/lib/ocr";
+import JudgeModeModal from "@/components/JudgeModeModal";
+import CreditsModal from "@/components/CreditsModal";
 
 type TabType = "file" | "paste" | "link" | "compare";
 
@@ -29,6 +31,8 @@ export default function HomePage() {
 
   const [activeTab, setActiveTab] = useState<TabType>("file");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isJudgeModalOpen, setIsJudgeModalOpen] = useState(false);
+  const [isCreditsModalOpen, setIsCreditsModalOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStatus, setProcessingStatus] = useState<string>("");
@@ -384,8 +388,8 @@ export default function HomePage() {
           {/* Header Actions */}
           <div className="flex items-center gap-2 sm:gap-4">
             <button
-              onClick={() => showToast("Judge Mode replay fixtures load in Phase 10")}
-              className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg border border-[#14213D]/20 bg-white/80 hover:bg-white text-xs sm:text-sm font-semibold text-[#14213D] transition-all shadow-2xs hover:shadow-xs active:scale-[0.98]"
+              onClick={() => setIsJudgeModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg border border-[#14213D]/20 bg-white/80 hover:bg-white text-xs sm:text-sm font-semibold text-[#14213D] transition-all shadow-2xs hover:shadow-xs active:scale-[0.98] cursor-pointer"
             >
               <ShieldAlert className="w-4 h-4 text-[#D64545]" />
               <span className="hidden sm:inline">Judge Mode: see a full check in one click</span>
@@ -939,7 +943,7 @@ export default function HomePage() {
               </p>
             </div>
             <button
-              onClick={() => showToast("Judge Mode replay fixtures load in Phase 10")}
+              onClick={() => setIsJudgeModalOpen(true)}
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-xl border-2 border-[#14213D] bg-white hover:bg-[#14213D] text-[#14213D] hover:text-[#FBF8F1] text-sm sm:text-base font-semibold transition-all duration-200 shadow-2xs hover:shadow-xs active:scale-[0.98] group flex-shrink-0 cursor-pointer"
             >
               <ShieldAlert className="w-4 h-4 text-[#D64545] group-hover:text-[#FBF8F1]" />
@@ -956,7 +960,15 @@ export default function HomePage() {
       <footer className="w-full border-t border-[#14213D]/10 py-6 sm:py-8 bg-[#FBF8F1]">
         <div className="max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left text-xs sm:text-sm text-[#14213D]/65">
           <p>SignSafe is not legal advice. It helps you spot things to ask about.</p>
-          <div className="flex items-center gap-4 font-mono text-xs">
+          <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 font-mono text-xs">
+            <button
+              type="button"
+              onClick={() => setIsCreditsModalOpen(true)}
+              className="text-[#14213D] hover:underline cursor-pointer font-semibold"
+            >
+              How credits work
+            </button>
+            <span>•</span>
             <Link href="/scan" className="hover:text-[#14213D] transition-colors">
               Scan
             </Link>
@@ -975,6 +987,16 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
+
+      {/* Modals */}
+      <JudgeModeModal
+        isOpen={isJudgeModalOpen}
+        onClose={() => setIsJudgeModalOpen(false)}
+      />
+      <CreditsModal
+        isOpen={isCreditsModalOpen}
+        onClose={() => setIsCreditsModalOpen(false)}
+      />
     </div>
   );
 }

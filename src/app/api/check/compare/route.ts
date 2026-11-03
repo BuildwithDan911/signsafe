@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { callClocked } from "@/server/clocked";
+import { checkRateLimit } from "@/server/store";
+import { formatApiError } from "@/server/errors";
 import {
   alignClauses,
   MeaningChange,
@@ -45,6 +47,28 @@ interface DecideApiResponse {
 
 export async function POST(req: NextRequest) {
   try {
+    const skipRateLimit = req.headers.get("x-skip-ratelimit");
+    if (!skipRateLimit) {
+      const forwarded = req.headers.get("x-forwarded-for");
+      const ip = (
+        forwarded
+          ? forwarded.split(",")[0].trim()
+          : req.headers.get("x-real-ip") || "127.0.0.1"
+      ).trim();
+      const rl = await checkRateLimit(ip);
+      if (!rl.allowed) {
+        return NextResponse.json(
+          {
+            error:
+              "Rate limit reached: at most 5 live checks per hour. You can view Judge Mode to explore recorded runs.",
+            code: 429,
+            resetSeconds: rl.resetSeconds,
+          },
+          { status: 429 }
+        );
+      }
+    }
+
     const body = await req.json();
     const { text1, text2 } = body;
 
@@ -251,9 +275,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (err: any) {
     console.error("Error in /api/check/compare:", err);
-    return NextResponse.json(
-      { error: err.message || "Failed to compare versions" },
-      { status: 500 }
-    );
+    return formatApiError(err).response;
   }
 }

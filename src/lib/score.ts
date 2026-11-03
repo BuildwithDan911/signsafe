@@ -7,6 +7,7 @@ export interface ScoreInput {
   confirmedSignalIds?: string[]; // IDs where user answered Yes
   greenSignalsCount?: number;
   brokenPromisesCount?: number; // Phase 8: Broken promise adds 1 amber point
+  failedSafetySteps?: string[]; // Phase 10: Failed safety steps (guard, inspect, protect)
 }
 
 export interface ScoreResult {
@@ -39,6 +40,7 @@ export function calculateScore(input: ScoreInput): ScoreResult {
     confirmedSignalIds = [],
     greenSignalsCount = 0,
     brokenPromisesCount = 0,
+    failedSafetySteps = [],
   } = input;
 
   let totalPoints = 0;
@@ -87,14 +89,36 @@ export function calculateScore(input: ScoreInput): ScoreResult {
   let label: string;
   let headline: string;
 
+  // Phase 10: Failed safety steps (Guard, Inspect or Protect) prevent green result
+  const hasSafetyFailure = failedSafetySteps.length > 0;
+
   if (totalPoints === 0) {
-    color = "green";
-    label = "LOOKS FAIR";
-    headline = "Looks fair. No major warning signs detected in this document.";
+    if (hasSafetyFailure) {
+      color = "amber";
+      label = "ASK FIRST";
+      headline = "We couldn't finish every check, so we can't call this safe.";
+      breakdown.push({
+        reason: "We couldn't finish every check, so we can't call this safe.",
+        points: 1,
+      });
+      totalPoints = 1;
+    } else {
+      color = "green";
+      label = "LOOKS FAIR";
+      headline = "Looks fair. No major warning signs detected in this document.";
+    }
   } else if (totalPoints <= 3) {
     color = "amber";
     label = "ASK FIRST";
-    headline = "Ask first. A few items should be clarified before signing.";
+    headline = hasSafetyFailure
+      ? "We couldn't finish every check, so we can't call this safe."
+      : "Ask first. A few items should be clarified before signing.";
+    if (hasSafetyFailure) {
+      breakdown.push({
+        reason: "We couldn't finish every check, so we can't call this safe.",
+        points: 0,
+      });
+    }
   } else {
     color = "red";
     label = "DON'T SIGN YET";
@@ -102,6 +126,12 @@ export function calculateScore(input: ScoreInput): ScoreResult {
       confirmedSignalIds.length > 0
         ? "Don't sign yet. Several warning signs add up, and you confirmed the fee or tell."
         : "Don't sign yet. Several significant warning signs add up. Verify first.";
+    if (hasSafetyFailure) {
+      breakdown.push({
+        reason: "We couldn't finish every check, so we can't call this safe.",
+        points: 0,
+      });
+    }
   }
 
   // Calculate Sign Score: 100 - (12 * points) + (5 * greens)
