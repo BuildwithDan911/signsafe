@@ -54,3 +54,6 @@ fixtures/lab
 # private answer key and archive samples
 kit/samples/NOTES_PLANTED_FLAGS.md
 kit/samples/archive/
+public/samples/NOTES_PLANTED_FLAGS.md
+public/samples/archive/
+**/NOTES_PLANTED_FLAGS.md
