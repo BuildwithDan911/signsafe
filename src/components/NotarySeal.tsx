@@ -8,7 +8,7 @@ export type SealColor = "green" | "amber" | "red";
 interface NotarySealProps {
   color?: SealColor;
   score?: number;
-  size?: "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg";
   animate?: boolean;
   className?: string;
   replayKey?: string | number;
@@ -48,6 +48,7 @@ const colorMap: Record<
 };
 
 const sizeMap = {
+  xs: { dimension: 40, fontSizeScore: 0, fontSizeLabel: 0, viewBox: 200 },
   sm: { dimension: 110, fontSizeScore: 24, fontSizeLabel: 9, viewBox: 200 },
   md: { dimension: 150, fontSizeScore: 32, fontSizeLabel: 11, viewBox: 200 },
   lg: { dimension: 190, fontSizeScore: 40, fontSizeLabel: 13, viewBox: 200 },
@@ -151,47 +152,62 @@ export default function NotarySeal({
           strokeWidth="1"
         />
 
-        {/* Circular embossed text: SIGNSAFE CHECKED */}
-        <text
-          fill={c.secondary}
-          fontSize="8.5"
-          fontWeight="700"
-          letterSpacing="2.5"
-          className="uppercase tracking-widest font-mono"
-        >
-          <textPath
-            href={`#textPath-${uniqueId}`}
-            startOffset="0%"
-            textAnchor="middle"
-          >
-            SIGNSAFE CHECKED • SIGNSAFE CHECKED •
-          </textPath>
-        </text>
-
-        {/* Center content: Score & status label */}
-        <g textAnchor="middle">
+        {/* Circular embossed text: SIGNSAFE CHECKED (hidden on xs for crispness) */}
+        {size !== "xs" && (
           <text
-            x={center}
-            y={center - 3}
             fill={c.secondary}
-            fontSize={s.fontSizeScore}
-            fontWeight="800"
-            fontFamily="var(--font-inter), sans-serif"
+            fontSize="8.5"
+            fontWeight="700"
+            letterSpacing="2.5"
+            className="uppercase tracking-widest font-mono"
           >
-            {score}
+            <textPath
+              href={`#textPath-${uniqueId}`}
+              startOffset="0%"
+              textAnchor="middle"
+            >
+              SIGNSAFE CHECKED • SIGNSAFE CHECKED •
+            </textPath>
           </text>
-          <text
-            x={center}
-            y={center + 18}
-            fill={c.primary}
-            fontSize={s.fontSizeLabel}
-            fontWeight="800"
-            letterSpacing="0.8"
-            className="uppercase tracking-wider font-sans"
-          >
-            {c.label}
-          </text>
-        </g>
+        )}
+
+        {/* Center content: Score & status label or checkmark on xs */}
+        {size === "xs" ? (
+          <g textAnchor="middle">
+            <path
+              d="M72 102 L92 122 L130 80"
+              fill="none"
+              stroke={c.primary}
+              strokeWidth="14"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </g>
+        ) : (
+          <g textAnchor="middle">
+            <text
+              x={center}
+              y={center - 3}
+              fill={c.secondary}
+              fontSize={s.fontSizeScore}
+              fontWeight="800"
+              fontFamily="var(--font-inter), sans-serif"
+            >
+              {score}
+            </text>
+            <text
+              x={center}
+              y={center + 18}
+              fill={c.primary}
+              fontSize={s.fontSizeLabel}
+              fontWeight="800"
+              letterSpacing="0.8"
+              className="uppercase tracking-wider font-sans"
+            >
+              {c.label}
+            </text>
+          </g>
+        )}
       </svg>
     </div>
   );
