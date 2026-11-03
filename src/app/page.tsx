@@ -45,6 +45,9 @@ export default function HomePage() {
     setProcessingStatus(`Reading ${file.name}...`);
 
     try {
+      if (!file.name.includes("02_freelance")) {
+        sessionStorage.removeItem("signsafe_pending_chat_screenshot");
+      }
       const lower = file.name.toLowerCase();
       const isImage =
         file.type.startsWith("image/") ||
@@ -114,6 +117,7 @@ export default function HomePage() {
     setProcessingStatus("Processing pasted text...");
 
     try {
+      sessionStorage.removeItem("signsafe_pending_chat_screenshot");
       const res = await fetch("/api/read", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -146,6 +150,7 @@ export default function HomePage() {
     setProcessingStatus("Checking link with SSRF firewall...");
 
     try {
+      sessionStorage.removeItem("signsafe_pending_chat_screenshot");
       const res = await fetch("/api/read-link", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -171,6 +176,26 @@ export default function HomePage() {
     setProcessingStatus(`Loading sample ${fileName}...`);
 
     try {
+      if (fileName.includes("02_freelance")) {
+        try {
+          const imgRes = await fetch("/samples/02_chat_promises.png");
+          if (imgRes.ok) {
+            const imgBlob = await imgRes.blob();
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              if (typeof reader.result === "string") {
+                sessionStorage.setItem("signsafe_pending_chat_screenshot", reader.result);
+              }
+            };
+            reader.readAsDataURL(imgBlob);
+          }
+        } catch (e) {
+          console.error("Could not preload sample chat screenshot:", e);
+        }
+      } else {
+        sessionStorage.removeItem("signsafe_pending_chat_screenshot");
+      }
+
       const res = await fetch(samplePath);
       if (!res.ok) throw new Error("Could not load sample file");
       const blob = await res.blob();

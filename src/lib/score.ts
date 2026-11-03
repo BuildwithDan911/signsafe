@@ -6,6 +6,7 @@ export interface ScoreInput {
   inspectMalicious?: boolean;
   confirmedSignalIds?: string[]; // IDs where user answered Yes
   greenSignalsCount?: number;
+  brokenPromisesCount?: number; // Phase 8: Broken promise adds 1 amber point
 }
 
 export interface ScoreResult {
@@ -37,6 +38,7 @@ export function calculateScore(input: ScoreInput): ScoreResult {
     inspectMalicious = false,
     confirmedSignalIds = [],
     greenSignalsCount = 0,
+    brokenPromisesCount = 0,
   } = input;
 
   let totalPoints = 0;
@@ -69,6 +71,15 @@ export function calculateScore(input: ScoreInput): ScoreResult {
       totalPoints += 1;
       breakdown.push({ reason: s.title, points: 1 });
     }
+  }
+
+  // Broken promises (Phase 8): each broken promise adds 1 amber point
+  if (brokenPromisesCount > 0) {
+    totalPoints += brokenPromisesCount * 1;
+    breakdown.push({
+      reason: "A promise in chat isn't in the contract",
+      points: brokenPromisesCount * 1,
+    });
   }
 
   // Determine colour band

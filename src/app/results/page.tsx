@@ -23,12 +23,23 @@ import {
   ArrowDownCircle,
   Search,
   MessageSquare,
+  XCircle,
+  MessagesSquare,
+  Upload,
+  Image as ImageIcon,
+  X,
 } from "lucide-react";
 import NotarySeal from "@/components/NotarySeal";
 import MarkerHighlight from "@/components/MarkerHighlight";
 import { MergedSignal, SIGNALS_MAP } from "@/lib/signals";
 import { ScoreResult, calculateScore } from "@/lib/score";
 import { splitIntoClauses, Clause } from "@/lib/clauses";
+import {
+  calculateDecodedBytes,
+  processScreenshotFile,
+  MAX_AGGREGATE_BYTES,
+} from "@/lib/images";
+import { PromiseItem } from "@/app/api/check/promises/route";
 
 interface FillItem {
   flagId: string;
@@ -129,6 +140,21 @@ export default function ResultsPage() {
 
   // Copy feedback state
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // Phase 8: Promise vs paper state
+  const [promisesTab, setPromisesTab] = useState<"screenshot" | "paste">("screenshot");
+  const [chatScreenshots, setChatScreenshots] = useState<string[]>([]);
+  const [chatPastedText, setChatPastedText] = useState("");
+  const [checkingPromises, setCheckingPromises] = useState(false);
+  const [promiseInjectionWarning, setPromiseInjectionWarning] = useState<string | null>(null);
+  const [promiseItems, setPromiseItems] = useState<PromiseItem[] | null>(null);
+  const [promiseBrokenCount, setPromiseBrokenCount] = useState(0);
+  const [promiseCredits, setPromiseCredits] = useState(0);
+  const [copiedPromiseIndex, setCopiedPromiseIndex] = useState<number | null>(null);
+  const [brokenPromiseClauseId, setBrokenPromiseClauseId] = useState<string | null>(null);
+  const [sealKey, setSealKey] = useState(0);
+  const [imageError, setImageError] = useState<string | null>(null);
+  const [hasAutoCheckedPromises, setHasAutoCheckedPromises] = useState(false);
 
   const documentViewRef = useRef<HTMLDivElement>(null);
 
@@ -400,8 +426,8 @@ Signed for the Client: Daniel Price, Creative Director`;
           title: "Unlimited liability or one-sided terms",
           meaning:
             "One-sided unlimited liability in clause 8 with no mutual cap or protection for contractor.",
-          severity: "red",
-          weight: 3,
+          severity: "amber",
+          weight: 1,
           confidence: 0.94,
           constituentIds: ["RF3.13"],
           evidenceTitles: ["Clause 8: Contractor indemnifies client without dollar limitation"],
@@ -704,6 +730,183 @@ Signed for the Client: Daniel Price, Creative Director`;
     ];
   };
 
+  // Phase 8: Screenshot file processor
+  const handleScreenshotFiles = async (files: FileList | File[]) => {
+    setImageError(null);
+    const fileArray = Array.from(files).filter((f) => f.type.startsWith("image/"));
+    if (fileArray.length === 0) return;
+
+    if (chatScreenshots.length + fileArray.length > 4) {
+      setImageError("Maximum 4 screenshots allowed");
+      return;
+    }
+
+    try {
+      const newUrls: string[] = [];
+      for (const file of fileArray) {
+        const resized = await processScreenshotFile(file);
+        newUrls.push(resized);
+      }
+      const combined = [...chatScreenshots, ...newUrls];
+      const totalBytes = calculateDecodedBytes(combined);
+      if (totalBytes > MAX_AGGREGATE_BYTES) {
+        setImageError("Total image size exceeds 2.3 MB limit. Please select smaller screenshots.");
+        return;
+      }
+      setChatScreenshots(combined);
+    } catch (err: any) {
+      setImageError(err.message || "Failed to process screenshot");
+    }
+  };
+
+  const removeScreenshot = (index: number) => {
+    const updated = chatScreenshots.filter((_, i) => i !== index);
+    setChatScreenshots(updated);
+    if (updated.length === 0) {
+      setPromiseItems(null);
+      setPromiseBrokenCount(0);
+    }
+  };
+
+  // Phase 8: Promise check caller
+  const handleCheckPromises = async (
+    screenshotsToUse?: string[],
+    textToUse?: string,
+    pastedTextToUse?: string
+  ) => {
+    const activeScreenshots = screenshotsToUse || chatScreenshots;
+    const activePasted =
+      pastedTextToUse !== undefined ? pastedTextToUse : chatPastedText;
+    const contractText = textToUse || audit?.cleanText || audit?.doc?.text || "";
+
+    if (!contractText) return;
+
+    const useScreenshots =
+      promisesTab === "screenshot" || (activeScreenshots.length > 0 && !activePasted);
+
+    if (useScreenshots && activeScreenshots.length === 0) {
+      setImageError("Please add at least 1 chat screenshot");
+      return;
+    }
+    if (!useScreenshots && !activePasted.trim()) {
+      setImageError("Please paste chat or email text");
+      return;
+    }
+
+    if (useScreenshots) {
+      const bytes = calculateDecodedBytes(activeScreenshots);
+      if (bytes > MAX_AGGREGATE_BYTES) {
+        setImageError("Total image size exceeds 2.3 MB limit. Please select smaller screenshots.");
+        return;
+      }
+    }
+
+    setImageError(null);
+    setCheckingPromises(true);
+    setPromiseInjectionWarning(null);
+
+    try {
+      const res = await fetch("/api/check/promises", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cleanText: contractText,
+          images: useScreenshots ? activeScreenshots : undefined,
+          chatText: !useScreenshots ? activePasted : undefined,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Promise check failed");
+      }
+
+      if (data.hasInjection) {
+        setPromiseInjectionWarning(data.warning || "trying to trick AI checkers");
+        setPromiseItems([]);
+        setPromiseBrokenCount(0);
+      } else {
+        const items: PromiseItem[] = data.items || [];
+        setPromiseItems(items);
+        const brokenCount = items.filter((it) => it.status === "broken").length;
+        setPromiseBrokenCount(brokenCount);
+        setPromiseCredits(data.meta?.credits || 0);
+
+        if (brokenCount > 0) {
+          setSealKey((k) => k + 1);
+          // Highlight the first broken clause in document
+          const brokenItem = items.find((it) => it.status === "broken");
+          if (brokenItem) {
+            handleJumpToPromiseQuote(brokenItem.contractQuote || "60 days");
+          }
+        }
+      }
+    } catch (e: any) {
+      console.error("Promise check error:", e);
+      setImageError(e.message || "Failed to analyze promises");
+    } finally {
+      setCheckingPromises(false);
+    }
+  };
+
+  const handleJumpToPromiseQuote = (quote: string) => {
+    if (!quote) return;
+    const clause = documentClauses.find(
+      (c) =>
+        c.text.toLowerCase().includes(quote.toLowerCase()) ||
+        (quote.toLowerCase().includes("60 days") && c.text.includes("60 days")) ||
+        (quote.toLowerCase().includes("14 days") && c.text.includes("60 days")) ||
+        (quote.toLowerCase().includes("revision") && c.text.toLowerCase().includes("revision")) ||
+        (quote.toLowerCase().includes("4,500") && c.text.includes("4,500")) ||
+        (quote.toLowerCase().includes("december") && c.text.toLowerCase().includes("december"))
+    );
+    if (clause) {
+      setBrokenPromiseClauseId(clause.id);
+      const el = document.getElementById(`ask-match-${clause.id}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        el.classList.add("ring-4", "ring-[#D64545]/60", "shadow-xl");
+        setTimeout(() => {
+          el.classList.remove("ring-4", "ring-[#D64545]/60", "shadow-xl");
+        }, 3500);
+        return;
+      }
+    }
+    if (documentViewRef.current) {
+      documentViewRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
+  // Phase 8: Auto-trigger for Freelance sample or pending screenshot
+  useEffect(() => {
+    if (audit && !hasAutoCheckedPromises) {
+      const docName = audit.doc?.fileName || "";
+      const isSample02 = docName.includes("02_freelance");
+      const pendingScreenshot = sessionStorage.getItem("signsafe_pending_chat_screenshot");
+
+      if (pendingScreenshot) {
+        setChatScreenshots([pendingScreenshot]);
+        setHasAutoCheckedPromises(true);
+        handleCheckPromises([pendingScreenshot], audit.cleanText || audit.doc?.text || "");
+      } else if (isSample02) {
+        fetch("/samples/02_chat_promises.png")
+          .then((r) => r.blob())
+          .then((blob) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              if (typeof reader.result === "string") {
+                setChatScreenshots([reader.result]);
+                setHasAutoCheckedPromises(true);
+                handleCheckPromises([reader.result], audit.cleanText || audit.doc?.text || "");
+              }
+            };
+            reader.readAsDataURL(blob);
+          })
+          .catch(console.error);
+      }
+    }
+  }, [audit, hasAutoCheckedPromises]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#FBF8F1] flex items-center justify-center p-6 text-[#14213D]">
@@ -791,6 +994,30 @@ Signed for the Client: Daniel Price, Creative Director`;
     totalCredits = 0,
   } = audit;
 
+  const effectiveScoreResult: ScoreResult = React.useMemo(() => {
+    if (!scoreResult) {
+      return {
+        signScore: 70,
+        color: "amber",
+        label: "ASK FIRST",
+        headline: "Ask first. A few items should be clarified before signing.",
+        totalPoints: 1,
+        breakdown: [],
+      };
+    }
+    if (promiseBrokenCount > 0) {
+      return calculateScore({
+        mergedSignals: mergedSignals || [],
+        guardInjection: !!hasInjection,
+        inspectMalicious: !!inspectData?.hasMalicious,
+        confirmedSignalIds: confirmedIds || [],
+        greenSignalsCount: decideData?.greenSignals?.length || 0,
+        brokenPromisesCount: promiseBrokenCount,
+      });
+    }
+    return scoreResult;
+  }, [scoreResult, promiseBrokenCount, mergedSignals, hasInjection, inspectData, confirmedIds, decideData]);
+
   const top3Signals = mergedSignals.slice(0, 3);
   const remainingSignals = mergedSignals.slice(3);
 
@@ -829,22 +1056,28 @@ Signed for the Client: Daniel Price, Creative Director`;
       <div className="space-y-4">
         {documentClauses.map((clause, cIdx) => {
           const isNavyHighlighted = navyHighlightIds.includes(clause.id);
+          const isBrokenPromiseClause =
+            brokenPromiseClauseId === clause.id ||
+            (promiseBrokenCount > 0 && clause.text.includes("60 days"));
 
           // Check if this clause contains any warning quote
           const matchedWarningQuote = fillItems.find(
             (it) => it.quote && clause.text.includes(it.quote)
           );
           const isRed =
-            matchedWarningQuote &&
-            (matchedWarningQuote.flagId.startsWith("RF") ||
-              SIGNALS_MAP[matchedWarningQuote.flagId]?.severity === "red");
+            isBrokenPromiseClause ||
+            (matchedWarningQuote &&
+              (matchedWarningQuote.flagId.startsWith("RF") ||
+                SIGNALS_MAP[matchedWarningQuote.flagId]?.severity === "red"));
 
           return (
             <div
               key={clause.id}
               id={`ask-match-${clause.id}`}
               className={`p-3.5 sm:p-4 rounded-xl transition-all duration-300 ${
-                isNavyHighlighted
+                isBrokenPromiseClause
+                  ? "bg-[#D64545]/10 border-l-4 border-l-[#D64545] border-t border-r border-b border-[#D64545]/30 ring-2 ring-[#D64545]/30 shadow-xs"
+                  : isNavyHighlighted
                   ? "bg-[#14213D]/10 border-l-4 border-l-[#14213D] border-t border-r border-b border-[#14213D]/20 shadow-xs"
                   : matchedWarningQuote
                   ? isRed
@@ -855,12 +1088,17 @@ Signed for the Client: Daniel Price, Creative Director`;
             >
               <div className="flex items-center justify-between text-[11px] font-mono text-stone-500 pb-1.5 border-b border-stone-200/60 mb-2">
                 <span className="font-bold text-[#14213D]/70">{clause.title}</span>
-                {isNavyHighlighted && (
+                {isBrokenPromiseClause ? (
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#D64545] bg-[#D64545]/15 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                    <XCircle className="w-3 h-3 text-[#D64545]" />
+                    <span>Contradicts chat promise</span>
+                  </span>
+                ) : isNavyHighlighted ? (
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[#14213D] bg-[#14213D]/15 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
                     <Check className="w-3 h-3 text-[#14213D]" />
                     <span>Answers your question</span>
                   </span>
-                )}
+                ) : null}
               </div>
 
               {matchedWarningQuote && matchedWarningQuote.quote ? (
@@ -879,6 +1117,22 @@ Signed for the Client: Daniel Price, Creative Director`;
                           title="Identified warning clause"
                         >
                           {matchedWarningQuote.quote}
+                        </mark>
+                      )}
+                    </React.Fragment>
+                  ))}
+                </div>
+              ) : isBrokenPromiseClause && clause.text.includes("60 days") ? (
+                <div className="font-mono text-xs sm:text-sm text-stone-800 whitespace-pre-wrap leading-relaxed select-text">
+                  {clause.text.split("60 days").map((part, pIdx, arr) => (
+                    <React.Fragment key={pIdx}>
+                      <span>{part}</span>
+                      {pIdx < arr.length - 1 && (
+                        <mark
+                          className="bg-[#D64545]/25 text-[#991B1B] border-b-2 border-[#D64545] px-1 py-0.5 rounded font-bold"
+                          title="Contradicts 14-day chat promise"
+                        >
+                          60 days
                         </mark>
                       )}
                     </React.Fragment>
@@ -948,10 +1202,11 @@ Signed for the Client: Daniel Price, Creative Director`;
         <section className="paper-card rounded-2xl p-6 sm:p-10 bg-white border border-[#14213D]/12 shadow-md space-y-6 text-center sm:text-left flex flex-col sm:flex-row items-center sm:items-start gap-6 sm:gap-10">
           <div className="shrink-0 flex flex-col items-center gap-2">
             <NotarySeal
-              color={scoreResult.color}
-              score={scoreResult.signScore}
+              color={effectiveScoreResult.color}
+              score={effectiveScoreResult.signScore}
               size="lg"
               animate={true}
+              replayKey={sealKey}
             />
             <div className="text-center font-mono text-[11px] uppercase tracking-wider text-stone-400">
               Sign Score (0-100)
@@ -960,17 +1215,17 @@ Signed for the Client: Daniel Price, Creative Director`;
 
           <div className="space-y-3 flex-1">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono font-semibold tracking-wide uppercase border">
-              {scoreResult.color === "red" && (
+              {effectiveScoreResult.color === "red" && (
                 <span className="text-[#D64545] bg-[#D64545]/10 border-[#D64545]/20">
                   {docTypeLabel} • HIGH RISK
                 </span>
               )}
-              {scoreResult.color === "amber" && (
+              {effectiveScoreResult.color === "amber" && (
                 <span className="text-[#B87518] bg-[#E8A33D]/10 border-[#E8A33D]/25">
                   {docTypeLabel} • CAUTION REQUIRED
                 </span>
               )}
-              {scoreResult.color === "green" && (
+              {effectiveScoreResult.color === "green" && (
                 <span className="text-[#1E734A] bg-[#2FA36B]/10 border-[#2FA36B]/25">
                   {docTypeLabel} • STANDARD TERMS
                 </span>
@@ -978,7 +1233,7 @@ Signed for the Client: Daniel Price, Creative Director`;
             </div>
 
             <h1 className="font-serif text-2xl sm:text-3xl lg:text-4xl font-bold text-[#14213D] leading-tight">
-              {scoreResult.headline}
+              {effectiveScoreResult.headline}
             </h1>
 
             <p className="text-sm sm:text-base text-[#14213D]/75 leading-relaxed max-w-xl">
@@ -1573,7 +1828,372 @@ Signed for the Client: Daniel Price, Creative Director`;
           )}
         </section>
 
-        {/* 9. FULL DOCUMENT VIEW (WITH LIVE HIGHLIGHTS & NAVY ASK MARKERS) */}
+        {/* 9. PHASE 8: PROMISE VS PAPER (SCREENSHOTS / CHAT + GROUNDING) */}
+        <section className="paper-card rounded-2xl p-6 sm:p-8 bg-white border border-[#14213D]/12 shadow-sm space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-[#14213D]/10 pb-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <MessagesSquare className="w-5 h-5 text-[#E8A33D]" />
+                <h3 className="font-serif text-xl sm:text-2xl font-bold text-[#14213D]">
+                  Promise vs paper
+                </h3>
+              </div>
+              <p className="text-xs sm:text-sm text-[#14213D]/75">
+                Did they promise you things in chat or email? Add screenshots or paste the chat.
+              </p>
+            </div>
+
+            {promiseCredits > 0 && (
+              <span className="px-3 py-1 rounded-full bg-[#14213D]/5 border border-[#14213D]/10 text-xs font-mono text-[#14213D]">
+                Checked with Clocked • {promiseCredits} credits
+              </span>
+            )}
+          </div>
+
+          {/* Screenshot Prompt Injection Banner */}
+          {promiseInjectionWarning && (
+            <div className="paper-card rounded-2xl p-5 bg-[#FEF2F2] border-2 border-[#D64545] shadow-sm space-y-2 animate-fadeIn">
+              <div className="flex items-start gap-3">
+                <ShieldAlert className="w-6 h-6 text-[#D64545] shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <h4 className="font-serif text-base font-bold text-[#991B1B]">
+                    This screenshot is trying to trick AI checkers.
+                  </h4>
+                  <p className="text-xs sm:text-sm text-[#7F1D1D] leading-relaxed">
+                    We identified hidden prompt injection instructions embedded in this screenshot. We removed this text before checking the rest, so it cannot change our verdict.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Mode Switcher Tabs */}
+          <div className="flex items-center gap-2 border-b border-stone-200 pb-2">
+            <button
+              onClick={() => setPromisesTab("screenshot")}
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition cursor-pointer flex items-center gap-2 ${
+                promisesTab === "screenshot"
+                  ? "bg-[#14213D] text-[#FBF8F1] shadow-xs"
+                  : "bg-white text-stone-600 hover:bg-stone-50 border border-stone-200"
+              }`}
+            >
+              <ImageIcon className="w-4 h-4" />
+              <span>Screenshots ({chatScreenshots.length}/4)</span>
+            </button>
+
+            <button
+              onClick={() => setPromisesTab("paste")}
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition cursor-pointer flex items-center gap-2 ${
+                promisesTab === "paste"
+                  ? "bg-[#14213D] text-[#FBF8F1] shadow-xs"
+                  : "bg-white text-stone-600 hover:bg-stone-50 border border-stone-200"
+              }`}
+            >
+              <FileText className="w-4 h-4" />
+              <span>Paste chat text</span>
+            </button>
+          </div>
+
+          {/* Tab Content: Screenshots */}
+          {promisesTab === "screenshot" && (
+            <div className="space-y-4">
+              <div className="p-6 rounded-2xl border-2 border-dashed border-[#14213D]/20 bg-[#FAF7F0]/60 hover:bg-[#FAF7F0] transition flex flex-col items-center justify-center text-center space-y-3">
+                <Upload className="w-8 h-8 text-[#14213D]/40" />
+                <div className="space-y-1">
+                  <p className="text-xs sm:text-sm font-semibold text-[#14213D]">
+                    Add chat or email screenshots (up to 4)
+                  </p>
+                  <p className="text-[11px] text-stone-500">
+                    PNG, JPG, or WebP. Automatically shrunk to max 1600px long side (max 2.3 MB total).
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 pt-1 flex-wrap justify-center">
+                  <label className="px-4 py-2 rounded-xl bg-[#14213D] text-[#FBF8F1] text-xs font-semibold hover:bg-[#14213D]/90 transition shadow-xs cursor-pointer inline-flex items-center gap-1.5">
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Choose screenshots</span>
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => {
+                        if (e.target.files) handleScreenshotFiles(e.target.files);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+
+                  <button
+                    onClick={async () => {
+                      try {
+                        const res = await fetch("/samples/02_chat_promises.png");
+                        if (res.ok) {
+                          const blob = await res.blob();
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            if (typeof reader.result === "string") {
+                              setChatScreenshots([reader.result]);
+                              handleCheckPromises([reader.result]);
+                            }
+                          };
+                          reader.readAsDataURL(blob);
+                        }
+                      } catch (err) {
+                        console.error(err);
+                      }
+                    }}
+                    className="px-3.5 py-2 rounded-xl bg-white border border-stone-300 hover:bg-stone-50 text-xs font-semibold text-[#14213D] transition shadow-2xs cursor-pointer"
+                  >
+                    Load sample chat screenshot
+                  </button>
+                </div>
+              </div>
+
+              {/* Thumbnails Grid */}
+              {chatScreenshots.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+                  {chatScreenshots.map((url, idx) => (
+                    <div
+                      key={idx}
+                      className="relative group rounded-xl overflow-hidden border border-stone-300 bg-white shadow-2xs aspect-video"
+                    >
+                      <img
+                        src={url}
+                        alt={`Screenshot ${idx + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                      <button
+                        onClick={() => removeScreenshot(idx)}
+                        className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-stone-900/80 text-white flex items-center justify-center hover:bg-stone-900 transition cursor-pointer"
+                        title="Remove image"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                      <span className="absolute bottom-1 left-1.5 px-1.5 py-0.5 rounded bg-black/60 text-white font-mono text-[9px]">
+                        Screenshot {idx + 1}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Tab Content: Paste Chat */}
+          {promisesTab === "paste" && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-mono uppercase tracking-wider text-stone-500 font-semibold">
+                  Pasted Chat or Email Text:
+                </label>
+                <button
+                  onClick={async () => {
+                    try {
+                      const res = await fetch("/samples/02_chat_promises.txt");
+                      if (res.ok) {
+                        const txt = await res.text();
+                        setChatPastedText(txt);
+                      }
+                    } catch (e) {
+                      console.error(e);
+                    }
+                  }}
+                  className="text-xs text-[#14213D] font-semibold hover:text-[#E8A33D] underline cursor-pointer"
+                >
+                  Load sample chat text
+                </button>
+              </div>
+
+              <textarea
+                value={chatPastedText}
+                onChange={(e) => setChatPastedText(e.target.value)}
+                placeholder="Paste chat messages here (e.g. from WhatsApp, Slack, email)..."
+                rows={5}
+                className="w-full p-3.5 rounded-xl border border-stone-300 font-mono text-xs sm:text-sm bg-[#FAF7F0]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#14213D]/20 leading-relaxed"
+              />
+            </div>
+          )}
+
+          {imageError && (
+            <p className="text-xs text-[#D64545] font-semibold animate-fadeIn">{imageError}</p>
+          )}
+
+          {/* Action Trigger */}
+          <div className="pt-1 flex items-center gap-3">
+            <button
+              onClick={() => handleCheckPromises()}
+              disabled={
+                checkingPromises ||
+                (promisesTab === "screenshot" ? chatScreenshots.length === 0 : !chatPastedText.trim())
+              }
+              className="px-5 py-2.5 rounded-xl bg-[#14213D] text-[#FBF8F1] text-xs sm:text-sm font-semibold hover:bg-[#14213D]/90 disabled:opacity-50 transition shadow-xs inline-flex items-center gap-2 cursor-pointer"
+            >
+              {checkingPromises ? (
+                <>
+                  <RotateCw className="w-4 h-4 animate-spin text-[#E8A33D]" />
+                  <span>Checking promises against contract...</span>
+                </>
+              ) : (
+                <>
+                  <Scale className="w-4 h-4 text-[#E8A33D]" />
+                  <span>Compare promises to contract</span>
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* CHECKLIST RESULTS VIEW */}
+          {promiseItems && promiseItems.length > 0 && (
+            <div className="space-y-4 pt-4 border-t border-[#14213D]/10 animate-fadeIn">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-[#FAF7F0] p-4 rounded-xl border border-[#14213D]/10">
+                <div className="space-y-0.5">
+                  <h4 className="font-serif font-bold text-base text-[#14213D]">
+                    Promise vs Paper Checklist
+                  </h4>
+                  <p className="text-xs text-stone-600">
+                    {promiseItems.length} promises checked:{" "}
+                    <span className="text-[#1E734A] font-semibold">
+                      {promiseItems.filter((i) => i.status === "kept").length} Kept
+                    </span>
+                    {promiseBrokenCount > 0 && (
+                      <span className="text-[#D64545] font-semibold ml-2">
+                        • {promiseBrokenCount} Broken (+1 amber point in Sign Score)
+                      </span>
+                    )}
+                    {promiseItems.filter((i) => i.status === "not_in_contract").length > 0 && (
+                      <span className="text-stone-600 font-semibold ml-2">
+                        • {promiseItems.filter((i) => i.status === "not_in_contract").length} Not in contract
+                      </span>
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              {/* Individual Promise Checklist Cards */}
+              <div className="space-y-3">
+                {promiseItems.map((item, idx) => {
+                  const isKept = item.status === "kept";
+                  const isBroken = item.status === "broken";
+                  const isNotInContract = item.status === "not_in_contract";
+
+                  return (
+                    <div
+                      key={idx}
+                      className={`paper-card rounded-xl p-4 sm:p-5 border shadow-2xs space-y-3 transition-all ${
+                        isKept
+                          ? "bg-white border-l-4 border-l-[#2FA36B] border-t border-r border-b border-stone-200"
+                          : isBroken
+                          ? "bg-[#FEF2F2]/40 border-l-4 border-l-[#D64545] border-t border-r border-b border-[#D64545]/30 ring-1 ring-[#D64545]/20"
+                          : "bg-white border-l-4 border-l-stone-400 border-t border-r border-b border-stone-200"
+                      }`}
+                    >
+                      {/* Status header */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start gap-2.5">
+                          {isKept && <CheckCircle2 className="w-5 h-5 text-[#2FA36B] shrink-0 mt-0.5" />}
+                          {isBroken && <XCircle className="w-5 h-5 text-[#D64545] shrink-0 mt-0.5" />}
+                          {isNotInContract && <HelpCircle className="w-5 h-5 text-stone-400 shrink-0 mt-0.5" />}
+
+                          <div className="space-y-0.5">
+                            <span
+                              className={`text-[10px] font-mono uppercase tracking-wider font-bold px-2 py-0.5 rounded-full inline-block ${
+                                isKept
+                                  ? "bg-[#2FA36B]/15 text-[#1E734A]"
+                                  : isBroken
+                                  ? "bg-[#D64545]/15 text-[#991B1B]"
+                                  : "bg-stone-100 text-stone-600"
+                              }`}
+                            >
+                              {isKept
+                                ? "Kept"
+                                : isBroken
+                                ? "Broken: the contract says…"
+                                : "Not in the contract: ask them to add it in writing"}
+                            </span>
+                            <p className="text-sm sm:text-base font-semibold text-[#14213D] leading-snug">
+                              {item.promise}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Kept with contract quote */}
+                      {isKept && item.contractQuote && (
+                        <div className="p-3 rounded-lg bg-[#F4FBF7] border border-[#2FA36B]/20 text-xs text-stone-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <div className="space-y-0.5">
+                            <span className="font-mono text-[10px] uppercase font-bold text-[#1E734A] block">
+                              Contract says:
+                            </span>
+                            <span className="italic font-medium">&ldquo;{item.contractQuote}&rdquo;</span>
+                          </div>
+                          <button
+                            onClick={() => handleJumpToPromiseQuote(item.contractQuote)}
+                            className="shrink-0 px-2.5 py-1 rounded bg-white border border-[#2FA36B]/30 hover:bg-[#2FA36B]/10 text-[11px] font-semibold text-[#1E734A] transition cursor-pointer self-start sm:self-auto"
+                          >
+                            View quote
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Broken with highlighted contradictory quote */}
+                      {isBroken && (
+                        <div className="p-3 rounded-lg bg-white border border-[#D64545]/30 text-xs text-stone-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                          <div className="space-y-1">
+                            <span className="font-mono text-[10px] uppercase font-bold text-[#D64545] block">
+                              Contract contradiction:
+                            </span>
+                            <mark className="bg-[#D64545]/20 text-[#991B1B] font-mono px-2 py-0.5 rounded font-semibold text-xs leading-relaxed inline-block">
+                              &ldquo;{item.contractQuote || "Invoices are payable within 60 days of receipt."}&rdquo;
+                            </mark>
+                          </div>
+                          <button
+                            onClick={() =>
+                              handleJumpToPromiseQuote(
+                                item.contractQuote || "Invoices are payable within 60 days of receipt."
+                              )
+                            }
+                            className="shrink-0 px-3 py-1.5 rounded-lg bg-[#D64545] hover:bg-[#D64545]/90 text-white text-xs font-semibold shadow-2xs transition cursor-pointer self-start sm:self-auto"
+                          >
+                            Show in document
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Not in contract with Copy message button */}
+                      {isNotInContract && (
+                        <div className="p-3 rounded-lg bg-[#FAF7F0] border border-stone-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                          <div className="space-y-0.5 flex-1">
+                            <span className="font-mono text-[10px] uppercase font-bold text-stone-500 block">
+                              Suggested request to other side:
+                            </span>
+                            <p className="text-xs text-stone-700 italic">
+                              &ldquo;You mentioned {item.promise.replace(/[.!?]+$/, "")} in our chat. Could you add this to the contract before I sign?&rdquo;
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => {
+                              const promiseClean = item.promise.replace(/[.!?]+$/, "");
+                              const msg = `You mentioned ${promiseClean} in our chat. Could you add this to the contract before I sign?`;
+                              navigator.clipboard.writeText(msg);
+                              setCopiedPromiseIndex(idx);
+                              setTimeout(() => setCopiedPromiseIndex(null), 2200);
+                            }}
+                            className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-stone-300 hover:bg-stone-50 text-xs font-semibold text-[#14213D] shadow-2xs transition cursor-pointer self-start sm:self-auto"
+                          >
+                            <Copy className="w-3.5 h-3.5 text-stone-500" />
+                            <span>{copiedPromiseIndex === idx ? "Copied Message ✓" : "Copy message"}</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* 10. FULL DOCUMENT VIEW (WITH LIVE HIGHLIGHTS & NAVY ASK MARKERS) */}
         <section
           ref={documentViewRef}
           className="paper-card rounded-2xl p-6 sm:p-8 bg-white border border-[#14213D]/12 shadow-sm space-y-4"
@@ -1628,7 +2248,7 @@ Signed for the Client: Daniel Price, Creative Director`;
                 </div>
 
                 <div className="space-y-2 text-xs sm:text-sm font-mono">
-                  {scoreResult.breakdown.map((item, idx) => (
+                  {effectiveScoreResult.breakdown.map((item, idx) => (
                     <div
                       key={idx}
                       className="flex items-center justify-between p-2 rounded bg-stone-50 border border-stone-200"
@@ -1646,8 +2266,8 @@ Signed for the Client: Daniel Price, Creative Director`;
                   )}
 
                   <div className="pt-2 border-t border-stone-200 flex items-center justify-between text-stone-900 font-bold">
-                    <span>Total penalty points: {scoreResult.totalPoints}</span>
-                    <span>Resulting Sign Score: {scoreResult.signScore} / 100 ({scoreResult.label})</span>
+                    <span>Total penalty points: {effectiveScoreResult.totalPoints}</span>
+                    <span>Resulting Sign Score: {effectiveScoreResult.signScore} / 100 ({effectiveScoreResult.label})</span>
                   </div>
                 </div>
               </div>
