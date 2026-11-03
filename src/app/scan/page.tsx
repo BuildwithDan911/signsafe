@@ -48,9 +48,13 @@ export default function ScanPage() {
   const [showRedacted, setShowRedacted] = useState(false);
   const [extractData, setExtractData] = useState<any>(null);
 
-  // Decide state
+  // Decide & Fill/Verify state
   const [decideData, setDecideData] = useState<any>(null);
   const [mergedSignals, setMergedSignals] = useState<MergedSignal[]>([]);
+  const [fillData, setFillData] = useState<any>(null);
+  const [verifyData, setVerifyData] = useState<any>(null);
+  const [fillItems, setFillItems] = useState<any[]>([]);
+  const [verifiedItems, setVerifiedItems] = useState<any[]>([]);
   const [confirmedIds, setConfirmedIds] = useState<string[]>([]);
   const [followUpAnswers, setFollowUpAnswers] = useState<Record<string, "yes" | "no" | "not_sure">>({});
 
@@ -112,6 +116,24 @@ export default function ScanPage() {
       id: "decide",
       name: "Evaluating warning signs (Decide)",
       description: "Assessing contract terms, telltale signals, and fair clauses",
+      status: "idle",
+      credits: 0,
+      cached: false,
+      summary: "",
+    },
+    {
+      id: "fill",
+      name: "Writing what to ask (Fill)",
+      description: "Extracting exact clauses, explanations, and negotiation messages",
+      status: "idle",
+      credits: 0,
+      cached: false,
+      summary: "",
+    },
+    {
+      id: "verify",
+      name: "Double-checking ourselves (Verify)",
+      description: "Grounding generated explanations claim-by-claim against document",
       status: "idle",
       credits: 0,
       cached: false,
@@ -388,6 +410,93 @@ export default function ScanPage() {
           cached,
           summary: `Identified ${redCount} major warning signs, ${amberCount} caution items`,
         });
+
+        // 6. Fill (Phase 6: Writing what to ask)
+        const signalsToFill = data.mergedSignals || [];
+        updateStep("fill", { status: "running" });
+        let currentFillItems: any[] = [];
+        try {
+          const fillRes = await fetch("/api/check/fill", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              cleanText: currentClean,
+              flags: signalsToFill.slice(0, 8),
+            }),
+          });
+          const fillDataRes = await fillRes.json();
+          if (fillRes.ok) {
+            const fillCredits = fillDataRes.meta?.credits || 0;
+            const fillCached = !!fillDataRes.meta?.cached;
+            runningCredits += fillCredits;
+            setTotalCredits(runningCredits);
+            currentFillItems = fillDataRes.items || [];
+            setFillData(fillDataRes);
+            setFillItems(currentFillItems);
+            const quoteCount = currentFillItems.filter((it: any) => it.quote).length;
+            updateStep("fill", {
+              status: "done",
+              credits: fillCredits,
+              cached: fillCached,
+              summary: `Extracted ${quoteCount} clauses, explanations & negotiation messages`,
+            });
+          } else {
+            updateStep("fill", {
+              status: "error",
+              error: fillDataRes.error,
+              summary: "Clause extraction skipped",
+            });
+          }
+        } catch (fillErr: any) {
+          updateStep("fill", {
+            status: "error",
+            error: fillErr.message,
+            summary: "Clause extraction skipped",
+          });
+        }
+
+        // 7. Verify (Phase 6: Double-checking ourselves)
+        updateStep("verify", { status: "running" });
+        let currentVerifiedItems: any[] = [];
+        try {
+          const verifyRes = await fetch("/api/check/verify-explanations", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              cleanText: currentClean,
+              items: currentFillItems,
+            }),
+          });
+          const verifyDataRes = await verifyRes.json();
+          if (verifyRes.ok) {
+            const verifyCredits = verifyDataRes.meta?.credits || 0;
+            const verifyCached = !!verifyDataRes.meta?.cached;
+            runningCredits += verifyCredits;
+            setTotalCredits(runningCredits);
+            currentVerifiedItems = verifyDataRes.verifiedItems || [];
+            setVerifyData(verifyDataRes);
+            setVerifiedItems(currentVerifiedItems);
+            const verifiedCount = currentVerifiedItems.filter((v: any) => v.verified).length;
+            updateStep("verify", {
+              status: "done",
+              credits: verifyCredits,
+              cached: verifyCached,
+              summary: `Double-checked explanations (${verifiedCount} verified against text ✓)`,
+            });
+          } else {
+            updateStep("verify", {
+              status: "error",
+              error: verifyDataRes.error,
+              summary: "Explanation verification skipped",
+            });
+          }
+        } catch (verifyErr: any) {
+          updateStep("verify", {
+            status: "error",
+            error: verifyErr.message,
+            summary: "Explanation verification skipped",
+          });
+        }
       }
     } catch (err: any) {
       updateStep("decide", {
@@ -473,6 +582,10 @@ export default function ScanPage() {
       protectData,
       extractData,
       decideData,
+      fillData,
+      verifyData,
+      fillItems,
+      verifiedItems,
       mergedSignals,
       confirmedIds,
       scoreResult,
