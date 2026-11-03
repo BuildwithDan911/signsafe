@@ -1913,5 +1913,12 @@
         "points": 1
       }
     ]
+  },
+  "dangerMatch": {
+    "matched": true,
+    "seenCount": 4,
+    "docType": "job_offer",
+    "documentQuote": "We will send you a cheque for USD 3,800. Deposit it and use the funds to buy your laptop and software from our approved vendor, TechSupply Direct.",
+    "patternQuote": "Following your interview with our hiring manager on Telegram, we offer you the position of Remote Data Entry Associate with Apex Cloud Dynamics. Pay is USD 42 per hour, paid weekly. Equipment: We will send you a cheque for USD 3,500. Deposit it and use the funds to buy your laptop and software from our approved vendor, TechSupply Direct."
   }
 }

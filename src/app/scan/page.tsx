@@ -61,6 +61,7 @@ export default function ScanPage() {
   const [verifiedItems, setVerifiedItems] = useState<any[]>([]);
   const [confirmedIds, setConfirmedIds] = useState<string[]>([]);
   const [followUpAnswers, setFollowUpAnswers] = useState<Record<string, "yes" | "no" | "not_sure">>({});
+  const [dangerMatch, setDangerMatch] = useState<any>(null);
 
   // Question wizard state
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
@@ -434,6 +435,31 @@ export default function ScanPage() {
           cached,
           summary: `Identified ${redCount} major warning signs, ${amberCount} caution items`,
         });
+
+        // Phase 12: Check Danger Memory for template reuse
+        try {
+          const dangerRes = await fetch("/api/check/danger-memory", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              cleanText: currentClean,
+              docType: data.docType || "contract",
+              flags: data.mergedSignals || [],
+            }),
+          });
+          if (dangerRes.ok) {
+            const dangerResData = await dangerRes.json();
+            if (dangerResData.matched) {
+              setDangerMatch(dangerResData);
+              if (dangerResData.in4Signal) {
+                data.mergedSignals = [...(data.mergedSignals || []), dangerResData.in4Signal];
+                setMergedSignals(data.mergedSignals);
+              }
+            }
+          }
+        } catch (e) {
+          console.warn("Danger memory check error:", e);
+        }
 
         // 6. Fill (Phase 6: Writing what to ask)
         const signalsToFill = data.mergedSignals || [];
@@ -890,6 +916,7 @@ export default function ScanPage() {
       verifiedItems,
       mergedSignals,
       confirmedIds,
+      dangerMatch,
       scoreResult,
       totalCredits: isJudgeMode ? 0 : totalCredits,
       isJudgeMode: Boolean(isJudgeMode),
@@ -912,6 +939,20 @@ export default function ScanPage() {
         greenSignalsCount: fixture.decide?.greenSignals?.length || 0,
       });
 
+    const fixtureDangerMatch =
+      fixture.dangerMatch ||
+      (fixture.sampleId === "job_offer"
+        ? {
+            matched: true,
+            seenCount: 4,
+            docType: "job_offer",
+            documentQuote:
+              "We will send you a cheque for USD 3,800. Deposit it and use the funds to buy your laptop and software from our approved vendor, TechSupply Direct.",
+            patternQuote:
+              "Following your interview with our hiring manager on Telegram, we offer you the position of Remote Data Entry Associate with Apex Cloud Dynamics. Pay is USD 42 per hour, paid weekly. Equipment: We will send you a cheque for USD 3,500. Deposit it and use the funds to buy your laptop and software from our approved vendor, TechSupply Direct.",
+          }
+        : null);
+
     const auditPayload = {
       doc: fixture.doc || doc,
       cleanText: fixture.cleanText || fixture.guard?.cleanText || doc?.text,
@@ -929,6 +970,7 @@ export default function ScanPage() {
       mergedSignals: fixture.decide?.mergedSignals || [],
       confirmedIds: fixture.confirmedIds || [],
       followUpAnswers: fixture.followUpAnswers || {},
+      dangerMatch: fixtureDangerMatch,
       scoreResult,
       totalCredits: 0,
       fixtureCredits: fixture.totalCredits || 0,

@@ -9,6 +9,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "record-fixtures": "npx tsx scripts/record-fixtures.ts",
+    "seed-memory": "npx tsx scripts/seed-memory.ts",
     "check-secrets": "node scripts/check-secrets.mjs",
     "prepare": "simple-git-hooks"
   },

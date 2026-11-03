@@ -36,6 +36,7 @@ import JudgeRibbon from "@/components/JudgeRibbon";
 import CreditCounter, { StepCreditInfo } from "@/components/CreditCounter";
 import CreditsModal from "@/components/CreditsModal";
 import { ShareDealModal } from "@/components/ShareDealModal";
+import DangerMemoryCard from "@/components/DangerMemoryCard";
 import { MergedSignal, SIGNALS_MAP } from "@/lib/signals";
 import { ScoreResult, calculateScore } from "@/lib/score";
 import { splitIntoClauses, Clause } from "@/lib/clauses";
@@ -117,6 +118,7 @@ interface AuditData {
   askData?: any;
   promisesData?: any;
   fairData?: any;
+  dangerMatch?: any;
 }
 
 export default function ResultsPage() {
@@ -1390,6 +1392,22 @@ Signed for the Client: Daniel Price, Creative Director`;
             </div>
           </div>
         )}
+
+        {/* DANGER MEMORY: SEEN BEFORE & HELP OTHERS */}
+        <DangerMemoryCard
+          dangerMatch={audit?.dangerMatch}
+          isRedResult={effectiveScoreResult.color === "red"}
+          redactedSnippet={
+            (audit?.protectData as any)?.anonymized_text ||
+            audit?.cleanText ||
+            audit?.doc?.text ||
+            ""
+          }
+          cleanText={audit?.cleanText || audit?.doc?.text || ""}
+          docType={audit?.decideData?.docType || "contract"}
+          flagIds={mergedSignals.map((s) => s.id)}
+          entities={(audit?.protectData as any)?.entities || []}
+        />
 
         {/* 4. TOP 3 REASON CARDS */}
         <section className="space-y-4">

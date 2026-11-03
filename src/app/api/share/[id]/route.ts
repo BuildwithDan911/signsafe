@@ -92,27 +92,38 @@ export async function PATCH(req: NextRequest, { params }: RouteProps) {
         );
       }
 
-      // 2. Call Clocked Decide with state set to the new clause
+      // 2. Call Clocked Decide with state set to the new clause and the attached flags
       let flagsCleared = true;
       try {
-        if (process.env.CLOCKED_API_KEY && process.env.MOCK_MODE !== "true") {
+        if (
+          process.env.CLOCKED_API_KEY &&
+          process.env.MOCK_MODE !== "true" &&
+          process.env.LIVE_CHECKS_ENABLED !== "false"
+        ) {
+          // Construct multiselect criteria limited to the flags attached to this clause
+          const attachedCriteria: Record<string, string> = {};
+          if (Array.isArray(fix.flagIds) && fix.flagIds.length > 0) {
+            for (const fid of fix.flagIds) {
+              attachedCriteria[fid] = `Flag ${fid}: unfair or one-sided condition remains.`;
+            }
+          }
+          attachedCriteria["balanced_fair"] = "Balanced, standard, or mutual terms.";
+
           const decideRes = await callClocked("decide", {
             state: fix.afterClause,
             questions: {
-              resolved_flags: {
+              attached_flags: {
                 type: "multiselect",
                 instructions:
-                  "Check if any unfair terms, uncapped liabilities, or broken promises remain in this revised clause.",
-                criteria: {
-                  flag_remaining: "The revised clause remains one-sided, unfair, or non-compliant.",
-                  fair_term: "The revised clause is balanced, mutual, and standard.",
-                },
+                  "Evaluate if any of the specified unfair warning flags are still present in this revised clause.",
+                criteria: attachedCriteria,
                 threshold: 0.5,
               },
             },
           });
-          const selected = decideRes.data?.answers?.resolved_flags?.selected || [];
-          flagsCleared = !selected.includes("flag_remaining");
+          const selected = decideRes.data?.answers?.attached_flags?.selected || [];
+          // Flag is cleared if none of the attached flags were selected
+          flagsCleared = !fix.flagIds?.some((fid) => selected.includes(fid));
         }
       } catch (e) {
         console.warn("[share/rescore] Decide error, using fallback verification:", e);
