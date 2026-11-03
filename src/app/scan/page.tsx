@@ -2,8 +2,10 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
+  ArrowRight,
   CheckCircle2,
   AlertTriangle,
   Loader2,
@@ -13,9 +15,12 @@ import {
   Eye,
   EyeOff,
   RotateCw,
-  Info,
+  HelpCircle,
+  Check,
 } from "lucide-react";
 import { SignDoc } from "@/lib/types";
+import { MergedSignal } from "@/lib/signals";
+import { calculateScore, ScoreResult } from "@/lib/score";
 
 interface StepState {
   id: string;
@@ -29,6 +34,7 @@ interface StepState {
 }
 
 export default function ScanPage() {
+  const router = useRouter();
   const [doc, setDoc] = useState<SignDoc | null>(null);
   const [loadingDoc, setLoadingDoc] = useState(true);
 
@@ -36,12 +42,21 @@ export default function ScanPage() {
   const [cleanText, setCleanText] = useState<string>("");
   const [quarantinedQuotes, setQuarantinedQuotes] = useState<string[]>([]);
   const [hasInjection, setHasInjection] = useState(false);
-  const [guardVerdict, setGuardVerdict] = useState<string>("");
 
   const [inspectData, setInspectData] = useState<any>(null);
   const [protectData, setProtectData] = useState<any>(null);
   const [showRedacted, setShowRedacted] = useState(false);
   const [extractData, setExtractData] = useState<any>(null);
+
+  // Decide state
+  const [decideData, setDecideData] = useState<any>(null);
+  const [mergedSignals, setMergedSignals] = useState<MergedSignal[]>([]);
+  const [confirmedIds, setConfirmedIds] = useState<string[]>([]);
+  const [followUpAnswers, setFollowUpAnswers] = useState<Record<string, "yes" | "no" | "not_sure">>({});
+
+  // Question wizard state
+  const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
+  const [questionsDone, setQuestionsDone] = useState(false);
 
   const [totalCredits, setTotalCredits] = useState<number>(0);
   const [systemAlert, setSystemAlert] = useState<string | null>(null);
@@ -93,6 +108,15 @@ export default function ScanPage() {
       cached: false,
       summary: "",
     },
+    {
+      id: "decide",
+      name: "Evaluating warning signs (Decide)",
+      description: "Assessing contract terms, telltale signals, and fair clauses",
+      status: "idle",
+      credits: 0,
+      cached: false,
+      summary: "",
+    },
   ]);
 
   // Load doc from sessionStorage
@@ -111,19 +135,19 @@ export default function ScanPage() {
     }
   }, []);
 
-  // Update a single step
   const updateStep = (id: string, updates: Partial<StepState>) => {
     setSteps((prev) =>
       prev.map((s) => (s.id === id ? { ...s, ...updates } : s))
     );
   };
 
-  // Run the sequential pipeline
+  // Run the full sequential pipeline
   const runPipeline = async (activeDoc: SignDoc) => {
     let currentClean = activeDoc.text;
     let runningCredits = 0;
+    let extractedFacts: Record<string, any> = {};
 
-    // STEP 1: Guard
+    // 1. Guard
     updateStep("guard", { status: "running" });
     try {
       const res = await fetch("/api/check/guard", {
@@ -158,7 +182,6 @@ export default function ScanPage() {
 
         if (data.injection) {
           setHasInjection(true);
-          setGuardVerdict(data.category || "Prompt injection instruction");
           setQuarantinedQuotes(data.quarantinedQuotes || []);
         }
 
@@ -184,7 +207,7 @@ export default function ScanPage() {
       });
     }
 
-    // STEP 2: Inspect
+    // 2. Inspect
     updateStep("inspect", { status: "running" });
     try {
       const res = await fetch("/api/check/inspect", {
@@ -219,7 +242,6 @@ export default function ScanPage() {
           });
         } else {
           const maliciousCount = data.results?.filter((r: any) => r.malicious).length || 0;
-          const suspiciousCount = data.results?.filter((r: any) => r.suspicious).length || 0;
           updateStep("inspect", {
             status: "done",
             credits,
@@ -227,8 +249,6 @@ export default function ScanPage() {
             summary:
               maliciousCount > 0
                 ? `Flagged ${maliciousCount} malicious script / command line(s)`
-                : suspiciousCount > 0
-                ? `Flagged ${suspiciousCount} suspicious command(s)`
                 : "All command lines and scripts checked: benign",
           });
         }
@@ -241,7 +261,7 @@ export default function ScanPage() {
       });
     }
 
-    // STEP 3: Protect
+    // 3. Protect
     updateStep("protect", { status: "running" });
     try {
       const res = await fetch("/api/check/protect", {
@@ -281,7 +301,7 @@ export default function ScanPage() {
       });
     }
 
-    // STEP 4: Extract
+    // 4. Extract
     updateStep("extract", { status: "running" });
     try {
       const res = await fetch("/api/check/extract", {
@@ -304,6 +324,7 @@ export default function ScanPage() {
         setTotalCredits(runningCredits);
 
         setExtractData(data);
+        extractedFacts = data.fields || {};
 
         const foundCount = Object.values(data.fields || {}).filter(
           (f: any) => f.value !== null && f.value !== undefined
@@ -323,6 +344,58 @@ export default function ScanPage() {
         summary: "Fact extraction unavailable",
       });
     }
+
+    // 5. Decide (Phase 5)
+    updateStep("decide", { status: "running" });
+    try {
+      const res = await fetch("/api/check/decide", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cleanText: currentClean,
+          facts: extractedFacts,
+          fileSignals: activeDoc.fileSignals || [],
+          emails: activeDoc.emails || [],
+        }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        updateStep("decide", {
+          status: "error",
+          error: data.error || "Decide check failed",
+          summary: "Risk evaluation unavailable",
+        });
+      } else {
+        const credits = data.meta?.credits || 0;
+        const cached = !!data.meta?.cached;
+        runningCredits += credits;
+        setTotalCredits(runningCredits);
+
+        setDecideData(data);
+        setMergedSignals(data.mergedSignals || []);
+
+        const redCount = (data.mergedSignals || []).filter(
+          (s: MergedSignal) => s.severity === "red"
+        ).length;
+        const amberCount = (data.mergedSignals || []).filter(
+          (s: MergedSignal) => s.severity === "amber"
+        ).length;
+
+        updateStep("decide", {
+          status: "done",
+          credits,
+          cached,
+          summary: `Identified ${redCount} major warning signs, ${amberCount} caution items`,
+        });
+      }
+    } catch (err: any) {
+      updateStep("decide", {
+        status: "error",
+        error: err.message,
+        summary: "Risk evaluation unavailable",
+      });
+    }
   };
 
   useEffect(() => {
@@ -331,6 +404,85 @@ export default function ScanPage() {
       runPipeline(doc);
     }
   }, [doc]);
+
+  // Pick up to 3 follow-up questions
+  const questionsToAsk = React.useMemo(() => {
+    const questions: Array<{
+      signalId: string;
+      question: string;
+      ifYes: string;
+      title: string;
+    }> = [];
+
+    const feeVal = extractData?.fields?.payments_you_make?.value;
+    const feeStr = Array.isArray(feeVal) && feeVal.length > 0 ? feeVal[0] : "";
+
+    for (const s of mergedSignals) {
+      if (s.askUser && questions.length < 3) {
+        let qText = s.askUser;
+        if (feeStr) {
+          qText = qText.replace(/\{fee\}/g, feeStr);
+        } else {
+          qText = qText.replace(/\{fee\}/g, "a fee");
+        }
+        questions.push({
+          signalId: s.id,
+          question: qText,
+          ifYes: s.ifYes || "Warning sign confirmed.",
+          title: s.title,
+        });
+      }
+    }
+
+    return questions;
+  }, [mergedSignals, extractData]);
+
+  // Handle follow up answering
+  const handleAnswer = (ans: "yes" | "no" | "not_sure") => {
+    const q = questionsToAsk[currentQuestionIdx];
+    if (!q) return;
+
+    setFollowUpAnswers((prev) => ({ ...prev, [q.signalId]: ans }));
+    if (ans === "yes") {
+      setConfirmedIds((prev) => [...prev, q.signalId]);
+    }
+
+    if (currentQuestionIdx + 1 < questionsToAsk.length) {
+      setCurrentQuestionIdx(currentQuestionIdx + 1);
+    } else {
+      setQuestionsDone(true);
+    }
+  };
+
+  // Navigate to results
+  const goToResults = () => {
+    const scoreResult: ScoreResult = calculateScore({
+      mergedSignals,
+      guardInjection: hasInjection,
+      inspectMalicious: inspectData?.hasMalicious,
+      confirmedSignalIds: confirmedIds,
+      greenSignalsCount: decideData?.greenSignals?.length || 0,
+    });
+
+    const auditPayload = {
+      doc,
+      cleanText,
+      hasInjection,
+      quarantinedQuotes,
+      inspectData,
+      protectData,
+      extractData,
+      decideData,
+      mergedSignals,
+      confirmedIds,
+      scoreResult,
+      totalCredits,
+      timestamp: new Date().toISOString(),
+    };
+
+    sessionStorage.setItem("signsafe_audit", JSON.stringify(auditPayload));
+    router.push("/results");
+  };
 
   if (loadingDoc) {
     return (
@@ -372,6 +524,12 @@ export default function ScanPage() {
       </div>
     );
   }
+
+  const isPipelineComplete = steps.every(
+    (s) => s.status === "done" || s.status === "error" || s.status === "skipped"
+  );
+
+  const activeQuestion = questionsToAsk[currentQuestionIdx];
 
   return (
     <div className="min-h-screen bg-[#FBF8F1] text-[#14213D] flex flex-col justify-between selection:bg-[#E8A33D]/25 font-sans">
@@ -523,7 +681,7 @@ export default function ScanPage() {
           </div>
         )}
 
-        {/* 5-STEP VERTICAL PAPER PROGRESS LIST */}
+        {/* 6-STEP VERTICAL PAPER PROGRESS LIST */}
         <div className="space-y-3">
           <div className="pb-1 flex justify-between items-center text-xs text-stone-500 font-mono uppercase tracking-wider">
             <span>Audit Pipeline Progression</span>
@@ -543,7 +701,6 @@ export default function ScanPage() {
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-3">
-                  {/* Status Indicator Icon */}
                   <div className="mt-0.5 flex-shrink-0">
                     {step.status === "running" && (
                       <Loader2 className="w-5 h-5 text-[#E8A33D] animate-spin" />
@@ -570,7 +727,6 @@ export default function ScanPage() {
                     </div>
                     <p className="text-xs text-stone-600 mt-0.5">{step.description}</p>
 
-                    {/* Completion Summary */}
                     {step.summary && (
                       <div className="mt-2 text-xs font-medium text-stone-800 bg-stone-50 px-2.5 py-1 rounded inline-block border border-stone-200/50">
                         {step.summary}
@@ -579,7 +735,6 @@ export default function ScanPage() {
                   </div>
                 </div>
 
-                {/* Right: Credits / Cached Badge or Retry */}
                 <div className="text-right flex-shrink-0 text-xs font-mono">
                   {step.status === "done" && (
                     <span className="text-stone-500">
@@ -597,7 +752,7 @@ export default function ScanPage() {
                   {step.status === "error" && (
                     <button
                       onClick={() => runPipeline(doc)}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-amber-200 hover:bg-amber-300 text-amber-900 font-medium transition"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-amber-200 hover:bg-amber-300 text-amber-900 font-medium transition cursor-pointer"
                     >
                       <RotateCw className="w-3 h-3" />
                       <span>Retry</span>
@@ -608,6 +763,69 @@ export default function ScanPage() {
             </div>
           ))}
         </div>
+
+        {/* FOLLOW-UP QUESTIONS CARD (PHASE 5 INTERACTIVE WIZARD) */}
+        {isPipelineComplete && questionsToAsk.length > 0 && !questionsDone && activeQuestion && (
+          <div className="paper-card rounded-2xl p-6 sm:p-8 bg-[#FAF7F0] border-2 border-[#E8A33D]/50 shadow-md space-y-4 animate-fadeIn">
+            <div className="flex items-center justify-between border-b border-[#14213D]/10 pb-3">
+              <div className="flex items-center gap-2">
+                <HelpCircle className="w-5 h-5 text-[#E8A33D]" />
+                <h2 className="font-serif text-lg sm:text-xl font-bold text-[#14213D]">
+                  A few quick questions ({currentQuestionIdx + 1} of {questionsToAsk.length})
+                </h2>
+              </div>
+              <button
+                onClick={() => setQuestionsDone(true)}
+                className="text-xs text-stone-500 hover:text-stone-800 underline font-mono cursor-pointer"
+              >
+                Skip all
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              <span className="text-xs font-mono uppercase text-[#B87518] font-bold">
+                Regarding: {activeQuestion.title}
+              </span>
+              <p className="font-serif text-base sm:text-lg text-[#14213D] leading-snug">
+                {activeQuestion.question}
+              </p>
+            </div>
+
+            <div className="pt-2 flex flex-wrap items-center gap-3">
+              <button
+                onClick={() => handleAnswer("yes")}
+                className="px-5 py-2.5 rounded-xl bg-[#D64545] hover:bg-[#b53333] text-white text-xs sm:text-sm font-semibold transition shadow-xs cursor-pointer"
+              >
+                Yes, that happened
+              </button>
+              <button
+                onClick={() => handleAnswer("no")}
+                className="px-5 py-2.5 rounded-xl bg-white hover:bg-stone-100 text-stone-800 border border-stone-300 text-xs sm:text-sm font-semibold transition shadow-xs cursor-pointer"
+              >
+                No
+              </button>
+              <button
+                onClick={() => handleAnswer("not_sure")}
+                className="px-5 py-2.5 rounded-xl bg-stone-200 hover:bg-stone-300 text-stone-700 text-xs sm:text-sm font-semibold transition cursor-pointer"
+              >
+                Not sure / not yet
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* PIPELINE COMPLETE CTA -> GO TO RESULTS */}
+        {isPipelineComplete && (questionsDone || questionsToAsk.length === 0) && (
+          <div className="pt-4 flex justify-center animate-fadeIn">
+            <button
+              onClick={goToResults}
+              className="w-full sm:w-auto px-8 py-4 bg-[#14213D] hover:bg-[#1f3158] text-[#FBF8F1] text-base sm:text-lg font-semibold rounded-2xl shadow-lg transition-all duration-200 inline-flex items-center justify-center gap-3 cursor-pointer"
+            >
+              <span>View Final Audit Results</span>
+              <ArrowRight className="w-5 h-5 text-[#E8A33D]" />
+            </button>
+          </div>
+        )}
 
         {/* FACTS PANEL (EXTRACT RESULT) */}
         {extractData?.fields && (
