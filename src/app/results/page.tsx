@@ -2379,26 +2379,24 @@ Signed for the Client: Daniel Price, Creative Director`;
                 </div>
 
                 <div className="space-y-2 text-xs sm:text-sm font-mono">
+                  <p className="text-xs text-stone-600">
+                    The score weighs severity, confidence, your answers, and independent findings. It stays between 26 and 94.
+                  </p>
                   {effectiveScoreResult.breakdown.map((item, idx) => (
                     <div
                       key={idx}
-                      className="flex items-center justify-between p-2 rounded bg-stone-50 border border-stone-200"
+                      className={`flex items-center justify-between p-2 rounded border ${item.points < 0 ? "bg-green-50 border-green-200" : "bg-stone-50 border-stone-200"}`}
                     >
-                      <span className="text-stone-700">{item.reason}</span>
-                      <span className="font-bold text-[#A62626]">+{item.points} pts</span>
+                      <span className={item.points < 0 ? "text-[#1E734A]" : "text-stone-700"}>{item.reason}</span>
+                      <span className={item.points < 0 ? "font-bold text-[#1E734A]" : "font-bold text-[#A62626]"}>
+                        {item.points < 0 ? "+" : "−"}{Math.abs(item.points).toFixed(1)} score
+                      </span>
                     </div>
                   ))}
 
-                  {decideData?.greenSignals && decideData.greenSignals.length > 0 && (
-                    <div className="flex items-center justify-between p-2 rounded bg-green-50 border border-green-200 text-[#1E734A]">
-                      <span>{decideData.greenSignals.length} green signals found (+5 inside band)</span>
-                      <span className="font-bold">+{decideData.greenSignals.length * 5} pts</span>
-                    </div>
-                  )}
-
                   <div className="pt-2 border-t border-stone-200 flex items-center justify-between text-stone-900 font-bold">
-                    <span>Total penalty points: {effectiveScoreResult.totalPoints}</span>
-                    <span>Resulting Sign Score: {effectiveScoreResult.signScore} / 100 ({effectiveScoreResult.label})</span>
+                    <span>Outcome points: {effectiveScoreResult.totalPoints}</span>
+                    <span>Sign Score: {effectiveScoreResult.signScore} / 100 ({effectiveScoreResult.label})</span>
                   </div>
                 </div>
               </div>
