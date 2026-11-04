@@ -38,7 +38,7 @@ import CreditsModal from "@/components/CreditsModal";
 import { ShareDealModal } from "@/components/ShareDealModal";
 import DangerMemoryCard from "@/components/DangerMemoryCard";
 import { MergedSignal, SIGNALS_MAP } from "@/lib/signals";
-import { ScoreResult, calculateScore } from "@/lib/score";
+import { ScoreResult, calculateScore, clampSignScore } from "@/lib/score";
 import { splitIntoClauses, Clause } from "@/lib/clauses";
 import {
   calculateDecodedBytes,
@@ -991,7 +991,7 @@ Signed for the Client: Daniel Price, Creative Director`;
         brokenPromisesCount: promiseBrokenCount,
       });
     }
-    return scoreResult;
+    return { ...scoreResult, signScore: clampSignScore(scoreResult.signScore) };
   }, [scoreResult, promiseBrokenCount, mergedSignals, hasInjection, inspectData, confirmedIds, decideData]);
 
   const top3Signals = mergedSignals.slice(0, 3);
