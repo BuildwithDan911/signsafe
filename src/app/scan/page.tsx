@@ -514,7 +514,10 @@ export default function ScanPage() {
             body: JSON.stringify({
               cleanText: currentClean,
               flags: signalsToFill.slice(0, 8),
-              clarificationFlags: (data.lowConfidenceIds || [])
+              clarificationFlags: [...new Set([
+                ...(data.lowConfidenceIds || []),
+                ...(data.highConfidenceIds || []).filter((id: string) => SIGNALS_MAP[id]?.askUser),
+              ])]
                 .slice(0, 3)
                 .map((id: string) => {
                   const signal = SIGNALS_MAP[id];
