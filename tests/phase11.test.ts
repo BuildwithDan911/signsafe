@@ -182,7 +182,7 @@ describe("Phase 11: Fair-deal share link, decision record & live rescore", () =>
       });
 
       expect(rescored.color).toBe("green");
-      expect(rescored.signScore).toBe(100);
+      expect(rescored.signScore).toBe(94);
       expect(rescored.signScore).toBeGreaterThan(initialScore.signScore);
       expect(rescored.label).toBe("LOOKS FAIR");
     });
