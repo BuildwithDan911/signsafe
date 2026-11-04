@@ -50,21 +50,22 @@ export function applyDealContext(
   context: DealContext | undefined,
   documentText: string
 ): MergedSignal[] {
-  if (!context || context.skipped) return signals;
+  const activeContext = context && !context.skipped ? context : undefined;
   const lower = documentText.toLowerCase();
-  const isTenant = context.role === "tenant" || context.role === "renting";
-  const isB2B = context.relationship === "business_to_business";
+  const isTenant = activeContext?.role === "tenant" || activeContext?.role === "renting";
+  const isB2B = activeContext?.relationship === "business_to_business";
   const hasRefundableTenancyDeposit = /\b(refundable|returnable)\b[\s\S]{0,60}\b(security\s+)?deposit\b|\bdeposit\b[\s\S]{0,60}\b(refundable|returnable)\b/i.test(documentText);
   const mutualLiability = /\b(each party|both parties|neither party)\b[\s\S]{0,180}\b(liab\w*|indemnif\w*)\b/i.test(documentText);
 
   let result = signals.filter((signal) => {
-    if (signal.id === "upfront_fee" && context.dealType === "tenancy_lease" && isTenant && hasRefundableTenancyDeposit) return false;
+    if (!activeContext) return true;
+    if (signal.id === "upfront_fee" && activeContext.dealType === "tenancy_lease" && isTenant && hasRefundableTenancyDeposit) return false;
     if ((signal.id === "liability" || signal.constituentIds?.includes("RF3.13")) && isB2B && mutualLiability) return false;
     return true;
   });
 
-  const receivesPayment = ["service_provider", "freelancer", "seller", "being_paid"].includes(context.role || "");
-  if ((context.dealType === "freelance_agreement" || context.dealType === "service_contract") && receivesPayment) {
+  const receivesPayment = ["service_provider", "freelancer", "seller", "being_paid"].includes(activeContext?.role || "");
+  if ((activeContext?.dealType === "freelance_agreement" || activeContext?.dealType === "service_contract") && receivesPayment) {
     const longPayment = documentText.match(/\b(?:invoices?\s+(?:are\s+)?payable|paid|payment\s+(?:is\s+)?due)\s+(?:within|after)\s+(\d{2,3})\s+days\b/i);
     const days = longPayment ? Number(longPayment[1]) : 0;
     if (days > 30 && !result.some((signal) => signal.id === "payment_delay")) {
@@ -84,16 +85,48 @@ export function applyDealContext(
       }];
     }
   }
+  const uncappedLiability = /\b(your|the signer|the\s+[A-Z][A-Za-z0-9&.-]*(?:\s+[A-Z][A-Za-z0-9&.-]*){0,2})['’]s?\s+(?:total\s+)?liability\b[\s\S]{0,80}\b(?:unlimited|uncapped|without\s+(?:any\s+)?(?:limit|cap)|no\s+(?:monetary\s+)?(?:limit|cap)|not\s+(?:be\s+)?limited)\b/i.exec(documentText);
+  const subject = uncappedLiability?.[1].replace(/^the\s+/i, "").replace(/['’]s?$/i, "");
+  const subjectIsServiceSide = /designer|contractor|consultant|service provider|freelancer|employee|worker|seller|tenant|borrower/i.test(subject || "");
+  const subjectIsClientSide = /client|customer|buyer|company|employer|landlord|lender/i.test(subject || "");
+  const role = activeContext?.role || "";
+  const userIsServiceSide = /service_provider|freelancer|being_paid|being_hired|contractor|designer|seller|tenant|renting|borrower|borrowing/.test(role);
+  const userIsClientSide = /client|hiring|paying|buyer|customer|employer|landlord|lender/.test(role);
+  const explicitlyOtherSide = (userIsServiceSide && subjectIsClientSide) || (userIsClientSide && subjectIsServiceSide);
+  if (uncappedLiability && !explicitlyOtherSide && !result.some((signal) => signal.id === "RF3.15")) {
+    const definition = SIGNALS_MAP["RF3.15"];
+    const subjectLabel = subject?.toLowerCase() === "your" ? "your" : subject ? `${subject}’s` : "the named party’s";
+    result = [...result, {
+      id: "RF3.15",
+      groupKey: "RF3.15",
+      title: definition?.title || "Uncapped liability",
+      meaning: definition?.meaning || "A named party has unlimited liability with no monetary cap.",
+      severity: definition?.severity || "red",
+      weight: 3,
+      confidence: 1,
+      constituentIds: ["RF3.15"],
+      evidenceTitles: [uncappedLiability[0].trim()],
+      verifyYourself: definition?.verifyYourself || "Check whose liability is unlimited and ask for a clear cap.",
+      askThem: definition?.askThem,
+      askUser: `The agreement says ${subjectLabel} liability is unlimited. Are you the party named there?`,
+      contextReason: activeContext
+        ? `This clause expressly says ${subjectLabel} liability is unlimited, with no monetary cap.`
+        : `The text expressly says ${subjectLabel} liability is unlimited. Check whether that named party is your side of the agreement.`,
+    }];
+  }
+
+  if (!activeContext) return result;
+
   const side = ({
     being_hired: "person being hired", hiring: "person hiring", paying: "person paying",
     being_paid: "person being paid", service_provider: "service provider", freelancer: "freelancer",
     seller: "seller", tenant: "tenant", renting: "person renting", borrowing: "borrower",
-  } as Record<string, string>)[context.role || ""] || context.role || "signing party";
+  } as Record<string, string>)[activeContext.role || ""] || activeContext.role || "signing party";
   const deal = ({
     job_offer: "job offer", employment_contract: "employment contract", freelance_agreement: "freelance agreement",
     tenancy_lease: "tenancy", purchase_payment: "purchase or payment agreement", loan_credit: "loan",
     sponsorship_deal: "sponsorship agreement", terms_conditions: "terms and conditions", nda: "NDA",
-  } as Record<string, string>)[context.dealType || ""] || "agreement";
+  } as Record<string, string>)[activeContext.dealType || ""] || "agreement";
   return result.map((signal) => ({
     ...signal,
     contextReason: signal.contextReason || (() => {
