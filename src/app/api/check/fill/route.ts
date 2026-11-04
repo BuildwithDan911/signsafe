@@ -20,13 +20,13 @@ interface FlagInput {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { cleanText = "", flags = [] } = body;
+    const { cleanText = "", flags = [], clarificationFlags = [] } = body;
     const dealContext = body.dealContext || {};
     const contextLabel = dealContext.skipped
       ? "The user skipped context questions; avoid assuming which side benefits."
       : `Context: user is ${dealContext.role || "a party"} in a ${dealContext.dealType || "contract"}; what is happening: ${dealContext.transaction || "unspecified"}; relationship: ${dealContext.relationship || "unspecified"}. Explain why this term matters to this user in one plain sentence.`;
 
-    if (!cleanText || flags.length === 0) {
+    if (!cleanText || (flags.length === 0 && clarificationFlags.length === 0)) {
       return NextResponse.json({
         items: [],
         meta: { credits: 0, cached: true, modelMs: 0 },
@@ -38,6 +38,9 @@ export async function POST(req: NextRequest) {
       .sort((a, b) => (b.weight ?? 0) - (a.weight ?? 0))
       .slice(0, 8);
 
+    const sortedClarificationFlags: FlagInput[] = [...clarificationFlags]
+      .sort((a, b) => (b.weight ?? 0) - (a.weight ?? 0))
+      .slice(0, 3);
     const fields: Record<string, any> = {};
 
     sortedFlags.forEach((flag, i) => {
@@ -77,6 +80,24 @@ export async function POST(req: NextRequest) {
       };
     });
 
+    sortedClarificationFlags.forEach((flag, i) => {
+      const title = flag.title || SIGNALS_MAP[flag.id]?.title || flag.id;
+      const meaning = flag.meaning || SIGNALS_MAP[flag.id]?.meaning || "a possible concern";
+      fields[`clarification_quote_${i}`] = {
+        type: "extract",
+        infer: false,
+        unit: "sentence",
+        description: `The exact sentence in this document that best supports this possible concern: ${title} — ${meaning}`,
+      };
+      fields[`clarification_question_${i}`] = {
+        type: "generate",
+        format: "text",
+        max_tokens: 45,
+        description:
+          `Ask one short, plain yes/no question (maximum 18 words) about a concrete fact the signer would know from their own experience, tied to the clause for ${title}: ${meaning}. Do not ask the signer to interpret legal wording, do not repeat generic risk language, and do not assume a fact. If the document gives no specific clause to clarify, return an empty string. Return only the question.`,
+      };
+    });
+
     const chunks = splitForClocked(cleanText);
     const responses: ClockedResponse[] = [];
     for (const chunk of chunks) {
@@ -108,8 +129,30 @@ export async function POST(req: NextRequest) {
       };
     });
 
+    const clarificationQuestions = sortedClarificationFlags
+      .map((flag, i) => {
+        const match = responses
+          .map((response, index) => ({
+            quote: response.data.fields?.[`clarification_quote_${i}`],
+            question: response.data.fields?.[`clarification_question_${i}`],
+            offset: chunks[index].start,
+          }))
+          .find(({ quote, question }) => quote?.value && question?.value);
+        const evidence = typeof match?.quote?.value === "string" ? match.quote.value.trim() : "";
+        const question = typeof match?.question?.value === "string" ? match.question.value.trim() : "";
+        if (!evidence || !question || !question.includes("?")) return null;
+        return {
+          signalId: flag.id,
+          title: flag.title || SIGNALS_MAP[flag.id]?.title || flag.id,
+          evidence,
+          question,
+        };
+      })
+      .filter(Boolean);
+
     return NextResponse.json({
       items,
+      clarificationQuestions,
       rawFields: Object.assign({}, ...responses.map((response) => response.data.fields || {})),
       sectionsChecked: chunks.length,
       meta: chunks.length > 1 ? sumChunkCredits(responses) : responses[0].meta,
