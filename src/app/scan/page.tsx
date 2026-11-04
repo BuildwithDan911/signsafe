@@ -25,6 +25,7 @@ import JudgeRibbon from "@/components/JudgeRibbon";
 import CreditCounter, { StepCreditInfo } from "@/components/CreditCounter";
 import CreditsModal from "@/components/CreditsModal";
 import { getJudgeSampleById } from "@/lib/judge";
+import { DealContext } from "@/lib/signals";
 
 interface StepState {
   id: string;
@@ -35,6 +36,19 @@ interface StepState {
   cached: boolean;
   summary: string;
   error?: string;
+}
+
+function guessDealType(value: unknown): string {
+  const label = String(value || "").toLowerCase();
+  if (/job|employment|offer|appointment/.test(label)) return label.includes("employment contract") ? "employment_contract" : "job_offer";
+  if (/freelance|contractor|service/.test(label)) return "freelance_agreement";
+  if (/tenan|lease|rental/.test(label)) return "tenancy_lease";
+  if (/loan|credit|borrow/.test(label)) return "loan_credit";
+  if (/sponsor|creator/.test(label)) return "sponsorship_deal";
+  if (/invoice|payment|purchase|sale/.test(label)) return "purchase_payment";
+  if (/terms|website|app/.test(label)) return "terms_conditions";
+  if (/nda|confidential/.test(label)) return "nda";
+  return "other";
 }
 
 export default function ScanPage() {
@@ -66,6 +80,11 @@ export default function ScanPage() {
   // Question wizard state
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
   const [questionsDone, setQuestionsDone] = useState(false);
+  const [showDealContext, setShowDealContext] = useState(false);
+  const [contextGuess, setContextGuess] = useState<any>(null);
+  const [contextForm, setContextForm] = useState<DealContext>({});
+  const [dealContext, setDealContext] = useState<DealContext | null>(null);
+  const contextResolver = useRef<((value: DealContext) => void) | null>(null);
 
   const [totalCredits, setTotalCredits] = useState<number>(0);
   const [systemAlert, setSystemAlert] = useState<string | null>(null);
@@ -392,6 +411,28 @@ export default function ScanPage() {
       });
     }
 
+    const guessedType = guessDealType(extractedFacts.document_type?.value);
+    const rawParties = extractedFacts.party_names?.value;
+    const parties = Array.isArray(rawParties) ? rawParties.map(String) : rawParties ? [String(rawParties)] : [];
+    for (const key of ["issuer_name", "signatory_name"]) {
+      const value = extractedFacts[key]?.value;
+      if (value && !parties.includes(String(value))) parties.push(String(value));
+    }
+    const guess = {
+      dealType: guessedType,
+      dealTypeLabel: extractedFacts.document_type?.value || "Not sure",
+      confidence: extractedFacts.document_type?.confidence ?? 0,
+      parties: parties.slice(0, 6),
+    };
+    setContextGuess(guess);
+    setContextForm({ dealType: guessedType, party: parties[0] || "", role: "", transaction: "", roughValue: "", relationship: "", other: "" });
+    const selectedContext = await new Promise<DealContext>((resolve) => {
+      contextResolver.current = resolve;
+      setShowDealContext(true);
+    });
+    setDealContext(selectedContext);
+    setShowDealContext(false);
+
     // 5. Decide (Phase 5)
     updateStep("decide", { status: "running" });
     try {
@@ -403,6 +444,7 @@ export default function ScanPage() {
           facts: extractedFacts,
           fileSignals: activeDoc.fileSignals || [],
           emails: activeDoc.emails || [],
+          dealContext: selectedContext,
         }),
       });
       const data = await res.json();
@@ -472,6 +514,7 @@ export default function ScanPage() {
             body: JSON.stringify({
               cleanText: currentClean,
               flags: signalsToFill.slice(0, 8),
+              dealContext: selectedContext,
             }),
           });
           const fillDataRes = await fillRes.json();
@@ -886,6 +929,14 @@ export default function ScanPage() {
     }
   };
 
+  const finishDealContext = (skip: boolean) => {
+    const value: DealContext = skip
+      ? { dealType: contextGuess?.dealType || "other", party: contextGuess?.parties?.[0] || "", skipped: true }
+      : { ...contextForm, role: contextForm.role || contextForm.transaction, skipped: false };
+    contextResolver.current?.(value);
+    contextResolver.current = null;
+  };
+
   // Navigate to results
   const goToResults = () => {
     const failedSafety = ["guard", "inspect", "protect"].filter((id) =>
@@ -914,6 +965,9 @@ export default function ScanPage() {
       verifyData,
       fillItems,
       verifiedItems,
+      dealContext,
+      contextSkipped: Boolean(dealContext?.skipped),
+      sectionsChecked: Number(decideData?.sectionsChecked || extractData?.sectionsChecked || 1),
       mergedSignals,
       confirmedIds,
       dangerMatch,
@@ -1284,6 +1338,70 @@ export default function ScanPage() {
             </div>
           ))}
         </div>
+
+        {showDealContext && contextGuess && (
+          <section className="paper-card rounded-2xl p-6 sm:p-8 bg-white border border-[#14213D]/12 shadow-md space-y-6" aria-labelledby="deal-context-title">
+            <div className="flex items-start justify-between gap-4 border-b border-[#14213D]/10 pb-4">
+              <div>
+                <h2 id="deal-context-title" className="font-serif text-xl sm:text-2xl font-bold text-[#14213D]">Help us understand your deal</h2>
+                <p className="mt-1 text-sm text-stone-700">We use your side of the agreement to judge whether a term is normal or one-sided.</p>
+                <p className="mt-2 text-xs text-stone-600">Clocked’s document guess: <strong>{contextGuess.dealTypeLabel}</strong>{contextGuess.confidence < 0.5 ? " — uncertain; please choose the closest match." : ""}</p>
+              </div>
+              <button type="button" onClick={() => finishDealContext(true)} className="shrink-0 text-sm text-stone-700 underline">Skip</button>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-sm font-semibold text-[#14213D]">1. Which party are you?</p>
+              <div className="flex flex-wrap gap-2">
+                {contextGuess.parties.map((party: string) => (
+                  <button key={party} type="button" onClick={() => setContextForm((p) => ({ ...p, party }))} className={`rounded-full border px-3 py-2 text-sm ${contextForm.party === party ? "border-[#14213D] bg-[#14213D] text-white" : "border-stone-300 bg-white text-[#14213D]"}`}>{party}</button>
+                ))}
+                <button type="button" onClick={() => setContextForm((p) => ({ ...p, party: "other" }))} className={`rounded-full border px-3 py-2 text-sm ${contextForm.party === "other" ? "border-[#14213D] bg-[#14213D] text-white" : "border-stone-300 bg-white text-[#14213D]"}`}>Other</button>
+              </div>
+              <p className="text-xs text-stone-600">Choose your role in this deal:</p>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  ["being_hired", "I’m being hired"], ["hiring", "I’m hiring"], ["paying", "I’m paying for something"],
+                  ["being_paid", "I’m being paid"], ["renting", "I’m renting"], ["borrowing", "I’m borrowing"],
+                ].map(([role, label]) => (
+                  <button key={role} type="button" onClick={() => setContextForm((p) => ({ ...p, role }))} className={`rounded-full border px-3 py-2 text-sm ${contextForm.role === role ? "border-[#14213D] bg-[#14213D] text-white" : "border-stone-300 bg-white text-[#14213D]"}`}>{label}</button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid gap-5 sm:grid-cols-2">
+              <label className="space-y-2 text-sm font-semibold text-[#14213D]">2. What is this deal?
+                <select value={contextForm.dealType || "other"} onChange={(e) => setContextForm((p) => ({ ...p, dealType: e.target.value }))} className="block w-full rounded-lg border border-stone-300 bg-white p-3 font-normal">
+                  <option value="job_offer">Job offer</option><option value="employment_contract">Employment contract</option><option value="freelance_agreement">Freelance or service contract</option><option value="purchase_payment">Purchase or payment agreement</option><option value="tenancy_lease">Tenancy</option><option value="loan_credit">Loan</option><option value="sponsorship_deal">Sponsorship</option><option value="terms_conditions">Terms and conditions</option><option value="nda">NDA</option><option value="other">Other</option>
+                </select>
+                <span className="block pt-1 text-xs font-normal">Which best describes what is happening?</span>
+                <select value={contextForm.transaction || ""} onChange={(e) => setContextForm((p) => ({ ...p, transaction: e.target.value }))} className="block w-full rounded-lg border border-stone-300 bg-white p-3 font-normal">
+                  <option value="">Choose one</option><option value="being_hired">I’m being hired</option><option value="hiring">I’m hiring</option><option value="paying">I’m paying for something</option><option value="being_paid">I’m being paid</option><option value="renting">I’m renting</option><option value="borrowing">I’m borrowing</option><option value="other">Other</option>
+                </select>
+              </label>
+              <label className="space-y-2 text-sm font-semibold text-[#14213D]">3. Rough value
+                <select value={contextForm.roughValue || ""} onChange={(e) => setContextForm((p) => ({ ...p, roughValue: e.target.value }))} className="block w-full rounded-lg border border-stone-300 bg-white p-3 font-normal">
+                  <option value="">Not sure / prefer not to say</option><option value="under 500">Under 500</option><option value="500 to 5,000">500–5,000</option><option value="5,000 to 50,000">5,000–50,000</option><option value="over 50,000">Over 50,000</option><option value="other">Other</option>
+                </select>
+              </label>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-sm font-semibold text-[#14213D]">4. Who is making this deal?</p>
+              <div className="flex flex-wrap gap-2">
+                {[["business_to_business", "Business to business"], ["individual", "A business and an individual"], ["other", "Other / not sure"]].map(([value, label]) => (
+                  <button key={value} type="button" onClick={() => setContextForm((p) => ({ ...p, relationship: value }))} className={`rounded-full border px-3 py-2 text-sm ${contextForm.relationship === value ? "border-[#14213D] bg-[#14213D] text-white" : "border-stone-300 bg-white text-[#14213D]"}`}>{label}</button>
+                ))}
+              </div>
+            </div>
+            {(contextForm.party === "other" || contextForm.dealType === "other" || contextForm.transaction === "other" || contextForm.roughValue === "other" || contextForm.relationship === "other") && (
+              <label className="block space-y-2 text-sm font-semibold text-[#14213D]">Other details
+                <input value={contextForm.other || ""} onChange={(e) => setContextForm((p) => ({ ...p, other: e.target.value }))} className="block w-full rounded-lg border border-stone-300 bg-white p-3 font-normal" placeholder="Add a short description" />
+              </label>
+            )}
+            <button type="button" onClick={() => finishDealContext(false)} className="w-full sm:w-auto rounded-xl bg-[#14213D] px-6 py-3 font-semibold text-white">Continue to context-aware check</button>
+          </section>
+        )}
 
         {/* FOLLOW-UP QUESTIONS CARD (PHASE 5 INTERACTIVE WIZARD) */}
         {isPipelineComplete && questionsToAsk.length > 0 && !questionsDone && activeQuestion && (

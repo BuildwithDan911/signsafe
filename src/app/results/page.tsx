@@ -119,6 +119,9 @@ interface AuditData {
   promisesData?: any;
   fairData?: any;
   dangerMatch?: any;
+  dealContext?: { dealType?: string; role?: string; skipped?: boolean };
+  contextSkipped?: boolean;
+  sectionsChecked?: number;
 }
 
 export default function ResultsPage() {
@@ -1320,6 +1323,12 @@ Signed for the Client: Daniel Price, Creative Director`;
             <p className="text-sm sm:text-base text-[#14213D]/75 leading-relaxed max-w-xl">
               Signals add up. Nothing alone is a verdict. Below are the key warning signs identified by our multi-stage inspection, merged to cut noise and ranked by importance.
             </p>
+            {audit?.contextSkipped && (
+              <p className="rounded-lg bg-[#E8A33D]/10 px-3 py-2 text-sm text-[#14213D]">You skipped the deal questions, so this result uses Clocked’s best-supported document guess.</p>
+            )}
+            {(audit?.sectionsChecked || 1) > 1 && (
+              <p className="text-sm font-semibold text-[#1E734A]">Checked all {audit?.sectionsChecked} sections.</p>
+            )}
 
             <div className="pt-2 flex flex-wrap items-center gap-3">
               <button
@@ -1497,6 +1506,11 @@ Signed for the Client: Daniel Price, Creative Director`;
                     <p className="text-sm sm:text-base text-[#14213D]/85 leading-relaxed">
                       {signal.meaning}
                     </p>
+                    {signal.contextReason && (
+                      <p className="rounded-lg bg-[#FBF8F1] px-3 py-2 text-sm font-medium text-[#14213D]">
+                        {signal.contextReason}
+                      </p>
+                    )}
 
                     {/* Exact Quote with MarkerHighlight & Jump Indicator */}
                     {quoteText && (

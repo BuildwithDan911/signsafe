@@ -30,6 +30,77 @@ export interface MergedSignal {
   askUser?: string;
   ifYes?: string;
   isConfirmed?: boolean;
+  contextReason?: string;
+}
+
+export interface DealContext {
+  party?: string;
+  role?: string;
+  dealType?: string;
+  transaction?: string;
+  roughValue?: string;
+  relationship?: string;
+  other?: string;
+  skipped?: boolean;
+}
+
+/** Apply a small set of explicit context rules after Clocked's evidence selection. */
+export function applyDealContext(
+  signals: MergedSignal[],
+  context: DealContext | undefined,
+  documentText: string
+): MergedSignal[] {
+  if (!context || context.skipped) return signals;
+  const lower = documentText.toLowerCase();
+  const isTenant = context.role === "tenant" || context.role === "renting";
+  const isB2B = context.relationship === "business_to_business";
+  const hasRefundableTenancyDeposit = /\b(refundable|returnable)\b[\s\S]{0,60}\b(security\s+)?deposit\b|\bdeposit\b[\s\S]{0,60}\b(refundable|returnable)\b/i.test(documentText);
+  const mutualLiability = /\b(each party|both parties|neither party)\b[\s\S]{0,180}\b(liab\w*|indemnif\w*)\b/i.test(documentText);
+
+  let result = signals.filter((signal) => {
+    if (signal.id === "upfront_fee" && context.dealType === "tenancy_lease" && isTenant && hasRefundableTenancyDeposit) return false;
+    if ((signal.id === "liability" || signal.constituentIds?.includes("RF3.13")) && isB2B && mutualLiability) return false;
+    return true;
+  });
+
+  const receivesPayment = ["service_provider", "freelancer", "seller", "being_paid"].includes(context.role || "");
+  if ((context.dealType === "freelance_agreement" || context.dealType === "service_contract") && receivesPayment) {
+    const longPayment = documentText.match(/\b(?:invoices?\s+(?:are\s+)?payable|paid|payment\s+(?:is\s+)?due)\s+(?:within|after)\s+(\d{2,3})\s+days\b/i);
+    const days = longPayment ? Number(longPayment[1]) : 0;
+    if (days > 30 && !result.some((signal) => signal.id === "payment_delay")) {
+      result = [...result, {
+        id: "payment_delay",
+        groupKey: "payment_delay",
+        title: "Long payment wait",
+        meaning: `Payment is scheduled ${days} days after the invoice or work.`,
+        severity: "amber",
+        weight: 1,
+        confidence: 1,
+        constituentIds: [],
+        evidenceTitles: [longPayment![0]],
+        verifyYourself: "Ask whether the payment due date can be shortened and confirmed in writing.",
+        askThem: "Could we shorten the payment period and state the due date in the agreement?",
+        contextReason: `For a freelancer being paid, ${days} days is a long wait; ask whether 14–30 days is possible.`,
+      }];
+    }
+  }
+  const side = ({
+    being_hired: "person being hired", hiring: "person hiring", paying: "person paying",
+    being_paid: "person being paid", service_provider: "service provider", freelancer: "freelancer",
+    seller: "seller", tenant: "tenant", renting: "person renting", borrowing: "borrower",
+  } as Record<string, string>)[context.role || ""] || context.role || "signing party";
+  const deal = ({
+    job_offer: "job offer", employment_contract: "employment contract", freelance_agreement: "freelance agreement",
+    tenancy_lease: "tenancy", purchase_payment: "purchase or payment agreement", loan_credit: "loan",
+    sponsorship_deal: "sponsorship agreement", terms_conditions: "terms and conditions", nda: "NDA",
+  } as Record<string, string>)[context.dealType || ""] || "agreement";
+  return result.map((signal) => ({
+    ...signal,
+    contextReason: signal.contextReason || (() => {
+      const meaning = String(signal.meaning || signal.title || "this term");
+      return `For you as the ${side} in this ${deal}, this is important because ${meaning.charAt(0).toLowerCase()}${meaning.slice(1)}`;
+    })(),
+  }));
 }
 
 interface GroupDef {

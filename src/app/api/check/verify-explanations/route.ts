@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { callClocked } from "@/server/clocked";
 import { formatApiError } from "@/server/errors";
+import { splitForClocked, sumChunkCredits } from "@/lib/chunking";
 
 export const maxDuration = 60;
 
@@ -23,11 +24,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Prepare document text (cap at 150,000 chars as specified in brief)
-    let docText = cleanText;
-    if (cleanText.length > 150000) {
-      docText = cleanText.slice(0, 150000);
-    }
+    const chunks = splitForClocked(cleanText);
 
     // Extract individual sentences from why texts for claims
     const sentenceToFlagId: Array<{ sentence: string; flagId: string; itemIndex: number }> = [];
@@ -71,12 +68,16 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const clockedRes = await callClocked("grounding", {
-      documents: [{ id: "document", text: docText }],
-      answer: answerText,
-      claims: claimsList,
-      evidence: "flagged",
-    });
+    const responses = [];
+    for (let base = 0; base < chunks.length; base += 3) {
+      const batch = chunks.slice(base, base + 3);
+      responses.push(await callClocked("grounding", {
+        documents: batch.map((chunk) => ({ id: `section_${chunk.index}`, text: chunk.text })),
+        answer: answerText,
+        claims: claimsList,
+        evidence: "flagged",
+      }));
+    }
 
     const returnedClaims: Array<{
       claim: string;
@@ -84,7 +85,15 @@ export async function POST(req: NextRequest) {
       supported?: number;
       contradicted?: number;
       not_stated?: number;
-    }> = clockedRes.data.claims || [];
+    }> = [];
+    const claimByText = new Map<string, (typeof returnedClaims)[number]>();
+    for (const response of responses) {
+      for (const claim of response.data.claims || []) {
+        const prior = claimByText.get(claim.claim);
+        if (!prior || (prior.verdict !== "supported" && claim.verdict === "supported")) claimByText.set(claim.claim, claim);
+      }
+    }
+    returnedClaims.push(...claimByText.values());
 
     // Map claim results back to each explanation item
     const verifiedItems = items.map((item, itemIndex) => {
@@ -141,8 +150,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       verifiedItems,
       claims: returnedClaims,
-      grounded: clockedRes.data.grounded,
-      meta: clockedRes.meta,
+      grounded: responses.some((response) => response.data.grounded),
+      sectionsChecked: chunks.length,
+      meta: chunks.length > 1 ? sumChunkCredits(responses) : responses[0].meta,
     });
   } catch (err: any) {
     return formatApiError(err).response;

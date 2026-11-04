@@ -1,17 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { callClocked } from "@/server/clocked";
 import { formatApiError } from "@/server/errors";
+import { splitForClocked, sumChunkCredits } from "@/lib/chunking";
 
 export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    let text = body.cleanText || body.text || "";
-
-    if (text.length > 200000) {
-      text = text.slice(0, 200000);
-    }
+    const text: string = body.cleanText || body.text || "";
+    const chunks = splitForClocked(text);
 
     const fieldsSchema: Record<string, any> = {
       issuer_name: "the organisation the document claims to come from",
@@ -29,6 +27,12 @@ export async function POST(req: NextRequest) {
         description: "phone numbers for contact",
         list: true,
         format: "phone",
+      },
+      document_type: "the name or type of agreement, document, or transaction described",
+      party_names: {
+        description: "names of the parties to this agreement",
+        list: true,
+        max_items: 6,
       },
       chat_apps_or_handles: {
         description: "any Telegram, WhatsApp, Signal or social handle mentioned",
@@ -69,28 +73,52 @@ export async function POST(req: NextRequest) {
       },
     };
 
-    const res = await callClocked("extract", {
-      text,
-      fields: fieldsSchema,
-    });
-
-    const d = res.data;
-    const rawFields = d.fields || {};
+    const responses = await Promise.all(chunks.map((chunk) =>
+      callClocked("extract", { text: chunk.text, fields: fieldsSchema })
+    ));
     const formattedFields: Record<string, any> = {};
 
-    for (const [key, fieldData] of Object.entries<any>(rawFields)) {
-      formattedFields[key] = {
-        value: fieldData.value ?? null,
-        start: fieldData.start,
-        end: fieldData.end,
-        confidence: fieldData.confidence,
-        items: fieldData.items,
-      };
+    for (const key of Object.keys(fieldsSchema)) {
+      const matches = responses.flatMap((response, index) => {
+        const field = response.data.fields?.[key];
+        if (!field) return [];
+        return [{ field, offset: chunks[index].start }];
+      });
+      const isList = typeof fieldsSchema[key] === "object" && fieldsSchema[key].list;
+      if (isList) {
+        const values: any[] = [];
+        const items: any[] = [];
+        for (const { field, offset } of matches) {
+          const sourceValues = Array.isArray(field.value) ? field.value : field.value == null ? [] : [field.value];
+          for (const value of sourceValues) {
+            const normalized = typeof value === "string" ? value.trim() : value;
+            if (normalized != null && !values.includes(normalized)) values.push(normalized);
+          }
+          for (const item of field.items || []) {
+            items.push({
+              ...item,
+              start: typeof item.start === "number" ? item.start + offset : item.start,
+              end: typeof item.end === "number" ? item.end + offset : item.end,
+            });
+          }
+        }
+        formattedFields[key] = { value: values.length ? values : null, start: items[0]?.start, end: items[0]?.end, items };
+      } else {
+        const { field, offset } = matches.find(({ field }) => field.value != null) || matches[0] || { field: {}, offset: 0 };
+        formattedFields[key] = {
+          value: field.value ?? null,
+          start: typeof field.start === "number" ? field.start + offset : field.start,
+          end: typeof field.end === "number" ? field.end + offset : field.end,
+          confidence: field.confidence,
+          items: field.items,
+        };
+      }
     }
 
     return NextResponse.json({
       fields: formattedFields,
-      meta: res.meta,
+      sectionsChecked: chunks.length,
+      meta: chunks.length > 1 ? sumChunkCredits(responses) : responses[0].meta,
     });
   } catch (err: any) {
     return formatApiError(err).response;
