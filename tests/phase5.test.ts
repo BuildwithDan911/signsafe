@@ -48,7 +48,7 @@ describe("Phase 5: Scoring Rules & Signal Merging Tests", () => {
       expect(score.color).toBe("red");
       expect(score.label).toBe("DON'T SIGN YET");
       expect(score.totalPoints).toBe(7);
-      expect(score.signScore).toBe(16); // 100 - 12*7 = 16
+      expect(score.signScore).toBe(26); // Sign Scores stay within the 26–94 display range
       expect(score.signScore).toBeLessThanOrEqual(39);
     });
 
@@ -76,7 +76,7 @@ describe("Phase 5: Scoring Rules & Signal Merging Tests", () => {
         greenSignalsCount: 5,
       });
       expect(zeroPointWithGreens.color).toBe("green");
-      expect(zeroPointWithGreens.signScore).toBe(100);
+      expect(zeroPointWithGreens.signScore).toBe(94);
 
       // 2. Amber band: 1 point with 10 greens remains amber (never becomes green)
       const amberWithGreens = calculateScore({
