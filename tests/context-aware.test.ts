@@ -25,6 +25,18 @@ describe("deal context scoring", () => {
     expect(applyDealContext([signal], { dealType: "job_offer", skipped: true }, "Fee required.")).toEqual([signal]);
   });
 
+  it("adds a separate flag for explicit uncapped liability on the user's side", () => {
+    const text = "The Designer’s total liability under this agreement is unlimited.";
+    const signals = applyDealContext([], { dealType: "freelance_agreement", role: "freelancer" }, text);
+    expect(signals.map((signal) => signal.id)).toContain("RF3.15");
+    expect(signals.find((signal) => signal.id === "RF3.15")?.evidenceTitles[0]).toContain("liability under this agreement is unlimited");
+  });
+
+  it("does not flag explicit uncapped liability that applies to the other party", () => {
+    const text = "The Designer’s total liability under this agreement is unlimited.";
+    expect(applyDealContext([], { dealType: "freelance_agreement", role: "paying" }, text)).toEqual([]);
+  });
+
   it("downgrades a refundable tenancy deposit and balanced B2B liability from warning signals", () => {
     const deposit = { id: "upfront_fee", constituentIds: ["RF1.2"] } as MergedSignal;
     const liability = { id: "liability", constituentIds: ["RF3.13"] } as MergedSignal;
