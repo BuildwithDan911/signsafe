@@ -517,6 +517,7 @@ export default function ScanPage() {
               clarificationFlags: [...new Set([
                 ...(data.lowConfidenceIds || []),
                 ...(data.highConfidenceIds || []),
+                ...(data.mergedSignals || []).flatMap((signal: any) => signal.constituentIds || []),
               ])]
                 .slice(0, 3)
                 .map((id: string) => {
