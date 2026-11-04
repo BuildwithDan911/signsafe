@@ -85,17 +85,31 @@ export function applyDealContext(
       }];
     }
   }
-  const uncappedLiability = /\b(your|the signer|the\s+[A-Z][A-Za-z0-9&.-]*(?:\s+[A-Z][A-Za-z0-9&.-]*){0,2})['’]s?\s+(?:total\s+)?liability\b[\s\S]{0,80}\b(?:unlimited|uncapped|without\s+(?:any\s+)?(?:limit|cap)|no\s+(?:monetary\s+)?(?:limit|cap)|not\s+(?:be\s+)?limited)\b/i.exec(documentText);
-  const subject = uncappedLiability?.[1].replace(/^the\s+/i, "").replace(/['’]s?$/i, "");
-  const subjectIsServiceSide = /designer|contractor|consultant|service provider|freelancer|employee|worker|seller|tenant|borrower/i.test(subject || "");
-  const subjectIsClientSide = /client|customer|buyer|company|employer|landlord|lender/i.test(subject || "");
-  const role = activeContext?.role || "";
-  const userIsServiceSide = /service_provider|freelancer|being_paid|being_hired|contractor|designer|seller|tenant|renting|borrower|borrowing/.test(role);
-  const userIsClientSide = /client|hiring|paying|buyer|customer|employer|landlord|lender/.test(role);
-  const explicitlyOtherSide = (userIsServiceSide && subjectIsClientSide) || (userIsClientSide && subjectIsServiceSide);
-  if (uncappedLiability && !explicitlyOtherSide && !result.some((signal) => signal.id === "RF3.15")) {
+  // Only match explicit unlimited-liability wording within one sentence/clause.
+  // Requiring both a named party and user-side context avoids joining unrelated
+  // mentions of liability and "unlimited" from elsewhere in a long agreement.
+  const partyPattern = "(you|your|(?:the\s+)?(?:consultant|designer|contractor|service provider|freelancer|employee|worker|seller|tenant|borrower|client|customer|buyer|company|employer|landlord|lender))";
+  const unlimitedPattern = "(?:unlimited|uncapped|without\s+(?:any\s+)?limits?|not\s+(?:be\s+)?limited)";
+  const liabilityPatterns = [
+    new RegExp("\\b" + partyPattern + "\\s*(?:['’]s)?\\s+(?:(?:aggregate|total|maximum)\\s+)?liability\\b[^.!?;\\r\\n]{0,120}\\b(?:(?:is|shall\\s+be|will\\s+be|remains)\\s+)?" + unlimitedPattern + "\\b", "i"),
+    new RegExp("\\b" + partyPattern + "\\b[^.!?;\\r\\n]{0,80}\\b(?:has|shall\\s+have|will\\s+have)\\s+" + unlimitedPattern + "\\s+liability\\b", "i"),
+    new RegExp("\\b(?:(?:aggregate|total|maximum)\\s+)?liability\\b[^.!?;\\r\\n]{0,80}\\b(?:of|for)\\s+" + partyPattern + "\\b[^.!?;\\r\\n]{0,60}\\b" + unlimitedPattern + "\\b", "i"),
+  ];
+  const uncappedLiability = liabilityPatterns
+    .map((pattern) => pattern.exec(documentText))
+    .find((match) => Boolean(match));
+  const subject = uncappedLiability?.[1]?.replace(/^the\s+/i, "").replace(/['’]s?$/i, "").toLowerCase();
+  const subjectIsServiceSide = /consultant|designer|contractor|service provider|freelancer|employee|worker|seller|tenant|borrower/.test(subject || "");
+  const subjectIsClientSide = /client|customer|buyer|company|employer|landlord|lender/.test(subject || "");
+  const userRole = activeContext?.role || "";
+  const userIsServiceSide = /service_provider|freelancer|being_paid|being_hired|contractor|designer|consultant|seller|tenant|renting|borrower|borrowing|employee|worker/.test(userRole);
+  const userIsClientSide = /client|hiring|paying|buyer|customer|employer|landlord|lender/.test(userRole);
+  const subjectIsUserSide = /^(you|your)$/.test(subject || "")
+    || (subjectIsServiceSide && userIsServiceSide)
+    || (subjectIsClientSide && userIsClientSide);
+  if (uncappedLiability && activeContext && subjectIsUserSide && !result.some((signal) => signal.id === "RF3.15")) {
     const definition = SIGNALS_MAP["RF3.15"];
-    const subjectLabel = subject?.toLowerCase() === "your" ? "your" : subject ? `${subject}’s` : "the named party’s";
+    const subjectLabel = /^(you|your)$/.test(subject || "") ? "your" : subject ? subject + "’s" : "your";
     result = [...result, {
       id: "RF3.15",
       groupKey: "RF3.15",
@@ -108,10 +122,8 @@ export function applyDealContext(
       evidenceTitles: [uncappedLiability[0].trim()],
       verifyYourself: definition?.verifyYourself || "Check whose liability is unlimited and ask for a clear cap.",
       askThem: definition?.askThem,
-      askUser: `The agreement says ${subjectLabel} liability is unlimited. Are you the party named there?`,
-      contextReason: activeContext
-        ? `This clause expressly says ${subjectLabel} liability is unlimited, with no monetary cap.`
-        : `The text expressly says ${subjectLabel} liability is unlimited. Check whether that named party is your side of the agreement.`,
+      askUser: "The agreement says " + subjectLabel + " liability is unlimited. Is this clause about your side of the deal?",
+      contextReason: "The clause expressly says " + subjectLabel + " liability is unlimited. Check whether that named party is your side of the agreement.",
     }];
   }
 
@@ -246,13 +258,13 @@ export const MERGE_GROUPS: GroupDef[] = [
   },
   {
     key: "one_sided_terms",
-    matchIds: ["RF3.6", "RF3.13", "RF3.4", "RF3.3", "RF3.14", "RF3.1"],
-    title: "Unlimited liability or one-sided terms",
-    meaning: "One-sided liability, unilateral contract amendment rights, or perpetual rights without mutual protection.",
-    severity: "red",
-    verifyYourself: "Insist that liability is mutual and capped at the total fee value of the contract.",
-    askUser: "Does the contract make you liable for all losses without limit or allow them to alter terms unilaterally?",
-    ifYes: "Real case: one-sided liability clauses can expose contractors to catastrophic uncapped damages.",
+    matchIds: ["RF3.13"],
+    title: "One-sided liability",
+    meaning: "The agreement places responsibility for losses on one side without comparable responsibility for the other.",
+    severity: "amber",
+    verifyYourself: "Check whether each party is responsible for its own actions and whether any liability cap is mutual.",
+    askUser: "Does this clause make you responsible for losses the other party caused, or leave them free of responsibility?",
+    ifYes: "A one-sided allocation can leave one party carrying costs caused by the other.",
   },
 ];
 

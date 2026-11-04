@@ -8,10 +8,10 @@ export interface ScoreInput {
   mergedSignals: MergedSignal[];
   guardInjection?: boolean;
   inspectMalicious?: boolean;
-  confirmedSignalIds?: string[]; // IDs where user answered Yes
+  confirmedSignalIds?: string[];
   greenSignalsCount?: number;
-  brokenPromisesCount?: number; // Phase 8: Broken promise adds 1 amber point
-  failedSafetySteps?: string[]; // Phase 10: Failed safety steps (guard, inspect, protect)
+  brokenPromisesCount?: number;
+  failedSafetySteps?: string[];
 }
 
 export interface ScoreResult {
@@ -23,18 +23,22 @@ export interface ScoreResult {
   breakdown: Array<{ reason: string; points: number }>;
 }
 
+const roundImpact = (value: number) => Math.round(value * 10) / 10;
+
+function scoreColor(totalPoints: number): "green" | "amber" | "red" {
+  if (totalPoints === 0) return "green";
+  if (totalPoints <= 3) return "amber";
+  return "red";
+}
+
 /**
- * Pure scoring function following BUILD_BRIEF.md Section 2:
- * - Red-weight signals count 3 points
- * - Amber-weight count 1 point
- * - Guard injection or Inspect malicious verdict counts 4 points
- * - Follow-up Yes adds 2 points (and confirms the flag as red)
- * - Green signals never change colour; each adds 5 to the score inside its band
+ * Maps evidence to a gradual 26–94 Sign Score.
  *
- * Bands:
- * - 0 points: green "LOOKS FAIR" (score 75 to 100)
- * - 1 to 3 points: amber "ASK FIRST" (score 40 to 74)
- * - 4 or more points: red "DON'T SIGN YET" (score 0 to 39)
+ * The outcome band still follows the transparent signal point rules: red flags
+ * are 3 points, amber flags are 1, safety detections are 4, and a confirmed
+ * finding is 5. The numeric score separately weighs severity, model confidence,
+ * confirmation and overlapping findings, so one issue doesn't collapse every
+ * concerning contract to the minimum score.
  */
 export function calculateScore(input: ScoreInput): ScoreResult {
   const {
@@ -48,110 +52,71 @@ export function calculateScore(input: ScoreInput): ScoreResult {
   } = input;
 
   let totalPoints = 0;
+  let riskImpact = 0;
   const breakdown: Array<{ reason: string; points: number }> = [];
+  const addRisk = (reason: string, impact: number, outcomePoints: number) => {
+    const roundedImpact = roundImpact(impact);
+    riskImpact += roundedImpact;
+    totalPoints += outcomePoints;
+    breakdown.push({ reason, points: roundedImpact });
+  };
 
-  // Guard injection: 4 points
-  if (guardInjection) {
-    totalPoints += 4;
-    breakdown.push({ reason: "Prompt injection instruction in document", points: 4 });
-  }
+  if (guardInjection) addRisk("Prompt injection instruction in document", 26, 4);
+  if (inspectMalicious) addRisk("Malicious macro or executable command", 26, 4);
 
-  // Inspect malicious: 4 points
-  if (inspectMalicious) {
-    totalPoints += 4;
-    breakdown.push({ reason: "Malicious macro or executable command", points: 4 });
-  }
-
-  // Merged signals
-  for (const s of mergedSignals) {
-    const isConfirmed = confirmedSignalIds.includes(s.id);
+  let signalIndex = 0;
+  for (const signal of mergedSignals) {
+    const isConfirmed = confirmedSignalIds.includes(signal.id);
+    const confidence = Number.isFinite(signal.confidence)
+      ? Math.max(0, Math.min(1, signal.confidence))
+      : 0.5;
+    const confidenceFactor = 0.65 + confidence * 0.35;
+    // Additional independent findings still count, with a modest reduction
+    // to avoid making repeated or closely related flags dominate the scale.
+    const overlapFactor = Math.pow(0.82, signalIndex);
+    const severityImpact = signal.severity === "red" ? 18 : signal.severity === "amber" ? 8 : 0;
 
     if (isConfirmed) {
-      // 3 points (red weight) + 2 points for Yes confirmation
-      totalPoints += 5;
-      breakdown.push({ reason: `${s.title} (Confirmed by you)`, points: 5 });
-    } else if (s.severity === "red") {
-      totalPoints += 3;
-      breakdown.push({ reason: s.title, points: 3 });
-    } else if (s.severity === "amber") {
-      totalPoints += 1;
-      breakdown.push({ reason: s.title, points: 1 });
+      addRisk(`${signal.title} (Confirmed by you)`, severityImpact * confidenceFactor * overlapFactor * 1.35, 5);
+    } else if (severityImpact > 0) {
+      addRisk(signal.title, severityImpact * confidenceFactor * overlapFactor, signal.severity === "red" ? 3 : 1);
     }
+    if (severityImpact > 0) signalIndex += 1;
   }
 
-  // Broken promises (Phase 8): each broken promise adds 1 amber point
   if (brokenPromisesCount > 0) {
-    totalPoints += brokenPromisesCount * 1;
-    breakdown.push({
-      reason: "A promise in chat isn't in the contract",
-      points: brokenPromisesCount * 1,
-    });
+    let promiseImpact = 0;
+    for (let i = 0; i < brokenPromisesCount; i += 1) promiseImpact += 5 * Math.pow(0.82, i);
+    addRisk("A promise in chat isn't in the contract", promiseImpact, brokenPromisesCount);
   }
 
-  // Determine colour band
-  let color: "green" | "amber" | "red";
-  let label: string;
-  let headline: string;
+  if (failedSafetySteps.length > 0) {
+    // An incomplete safety check prevents a green result and modestly reduces
+    // confidence in the overall score. Don't count the same failed step twice.
+    const failedUniqueSteps = [...new Set(failedSafetySteps)];
+    addRisk("We couldn't finish every check, so we can't call this safe.", failedUniqueSteps.length * 7, 0);
+    if (totalPoints === 0) totalPoints = 1;
+  }
 
-  // Phase 10: Failed safety steps (Guard, Inspect or Protect) prevent green result
-  const hasSafetyFailure = failedSafetySteps.length > 0;
-
-  if (totalPoints === 0) {
-    if (hasSafetyFailure) {
-      color = "amber";
-      label = "ASK FIRST";
-      headline = "We couldn't finish every check, so we can't call this safe.";
-      breakdown.push({
-        reason: "We couldn't finish every check, so we can't call this safe.",
-        points: 1,
-      });
-      totalPoints = 1;
-    } else {
-      color = "green";
-      label = "LOOKS FAIR";
-      headline = "Looks fair. No major warning signs detected in this document.";
-    }
-  } else if (totalPoints <= 3) {
-    color = "amber";
-    label = "ASK FIRST";
-    headline = hasSafetyFailure
-      ? "We couldn't finish every check, so we can't call this safe."
-      : "Ask first. A few items should be clarified before signing.";
-    if (hasSafetyFailure) {
-      breakdown.push({
-        reason: "We couldn't finish every check, so we can't call this safe.",
-        points: 0,
-      });
-    }
-  } else {
-    color = "red";
-    label = "DON'T SIGN YET";
-    headline =
-      confirmedSignalIds.length > 0
-        ? "Don't sign yet. Several warning signs add up, and you confirmed the fee or tell."
+  const color = scoreColor(totalPoints);
+  const label = color === "green" ? "LOOKS FAIR" : color === "amber" ? "ASK FIRST" : "DON'T SIGN YET";
+  const headline = color === "green"
+    ? "Looks fair. No major warning signs detected in this document."
+    : color === "amber"
+      ? failedSafetySteps.length > 0
+        ? "We couldn't finish every check, so we can't call this safe."
+        : "Ask first. A few items should be clarified before signing."
+      : confirmedSignalIds.length > 0
+        ? "Don't sign yet. Several warning signs add up, and you confirmed a concern."
         : "Don't sign yet. Several significant warning signs add up. Verify first.";
-    if (hasSafetyFailure) {
-      breakdown.push({
-        reason: "We couldn't finish every check, so we can't call this safe.",
-        points: 0,
-      });
-    }
-  }
 
-  // Calculate Sign Score: 100 - (12 * points) + (5 * greens)
-  const rawScore = 100 - 12 * totalPoints + 5 * greenSignalsCount;
-
-  let signScore: number;
-  if (color === "green") {
-    signScore = Math.max(75, Math.min(100, rawScore));
-  } else if (color === "amber") {
-    signScore = Math.max(40, Math.min(74, rawScore));
-  } else {
-    signScore = Math.max(0, Math.min(39, rawScore));
+  const greenBonus = Math.min(6, Math.max(0, greenSignalsCount) * 1.5);
+  if (greenBonus > 0) {
+    breakdown.push({ reason: "Protective terms found", points: -roundImpact(greenBonus) });
   }
 
   return {
-    signScore: clampSignScore(signScore),
+    signScore: clampSignScore(94 - riskImpact + greenBonus),
     color,
     label,
     headline,
@@ -171,34 +136,17 @@ export function computeScore(input: {
   failedSafetySteps?: string[];
 }): ScoreResult {
   if (input.signalPoints !== undefined) {
-    const points = input.signalPoints;
-    const greens = input.greenSignalsCount || 0;
-    let color: "green" | "amber" | "red" = "green";
-    let label = "LOOKS FAIR";
-    let headline = "Looks fair. No major warning signs detected.";
-    if (points === 0) {
-      color = "green";
-      label = "LOOKS FAIR";
-    } else if (points <= 3) {
-      color = "amber";
-      label = "ASK FIRST";
-      headline = "Ask first. A few items should be clarified before signing.";
-    } else {
-      color = "red";
-      label = "DON'T SIGN YET";
-      headline = "Don't sign yet. Several significant warning signs add up. Verify first.";
-    }
-    const rawScore = 100 - 12 * points + 5 * greens;
-    let signScore: number;
-    if (color === "green") {
-      signScore = Math.max(75, Math.min(100, rawScore));
-    } else if (color === "amber") {
-      signScore = Math.max(40, Math.min(74, rawScore));
-    } else {
-      signScore = Math.max(0, Math.min(39, rawScore));
-    }
+    const points = Math.max(0, input.signalPoints);
+    const greens = Math.max(0, input.greenSignalsCount || 0);
+    const color = scoreColor(points);
+    const label = color === "green" ? "LOOKS FAIR" : color === "amber" ? "ASK FIRST" : "DON'T SIGN YET";
+    const headline = color === "green"
+      ? "Looks fair. No major warning signs detected."
+      : color === "amber"
+        ? "Ask first. A few items should be clarified before signing."
+        : "Don't sign yet. Several significant warning signs add up. Verify first.";
     return {
-      signScore: clampSignScore(signScore),
+      signScore: clampSignScore(94 - 8 * points + Math.min(6, greens * 1.5)),
       color,
       label,
       headline,
