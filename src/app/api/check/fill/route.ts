@@ -140,12 +140,15 @@ export async function POST(req: NextRequest) {
           .find(({ quote, question }) => quote?.value && question?.value);
         const evidence = typeof match?.quote?.value === "string" ? match.quote.value.trim() : "";
         const question = typeof match?.question?.value === "string" ? match.question.value.trim() : "";
-        if (!evidence || !question || !question.includes("?")) return null;
+        if (!evidence || !question) return null;
+        const normalizedQuestion = question.endsWith("?")
+          ? question
+          : `${question.replace(/[.!:]+$/, "")}?`;
         return {
           signalId: flag.id,
           title: flag.title || SIGNALS_MAP[flag.id]?.title || flag.id,
           evidence,
-          question,
+          question: normalizedQuestion,
         };
       })
       .filter(Boolean);
