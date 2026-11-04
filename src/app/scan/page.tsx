@@ -19,7 +19,7 @@ import {
   Check,
 } from "lucide-react";
 import { SignDoc } from "@/lib/types";
-import { MergedSignal } from "@/lib/signals";
+import { MergedSignal, SIGNALS_MAP, mergeSignals } from "@/lib/signals";
 import { calculateScore, ScoreResult } from "@/lib/score";
 import JudgeRibbon from "@/components/JudgeRibbon";
 import CreditCounter, { StepCreditInfo } from "@/components/CreditCounter";
@@ -514,6 +514,23 @@ export default function ScanPage() {
             body: JSON.stringify({
               cleanText: currentClean,
               flags: signalsToFill.slice(0, 8),
+              clarificationFlags: (data.lowConfidenceIds || [])
+                .slice(0, 3)
+                .map((id: string) => {
+                  const signal = SIGNALS_MAP[id];
+                  return signal
+                    ? {
+                        id,
+                        title: signal.title,
+                        meaning: signal.meaning,
+                        askThem: signal.askThem,
+                        verifyYourself: signal.verifyYourself,
+                        weight: data.answers?.contract_terms?.probabilities?.[id] ??
+                          data.answers?.authenticity_tells?.probabilities?.[id] ?? 0,
+                      }
+                    : null;
+                })
+                .filter(Boolean),
               dealContext: selectedContext,
             }),
           });
@@ -880,37 +897,20 @@ export default function ScanPage() {
     }
   };
 
-  // Pick up to 3 follow-up questions
+  // Only ask short questions Clocked generated from an uncertain, document-backed clause.
   const questionsToAsk = React.useMemo(() => {
-    const questions: Array<{
-      signalId: string;
-      question: string;
-      ifYes: string;
-      title: string;
-    }> = [];
-
-    const feeVal = extractData?.fields?.payments_you_make?.value;
-    const feeStr = Array.isArray(feeVal) && feeVal.length > 0 ? feeVal[0] : "";
-
-    for (const s of mergedSignals) {
-      if (s.askUser && questions.length < 3) {
-        let qText = s.askUser;
-        if (feeStr) {
-          qText = qText.replace(/\{fee\}/g, feeStr);
-        } else {
-          qText = qText.replace(/\{fee\}/g, "a fee");
-        }
-        questions.push({
-          signalId: s.id,
-          question: qText,
-          ifYes: s.ifYes || "Warning sign confirmed.",
-          title: s.title,
-        });
-      }
-    }
-
-    return questions;
-  }, [mergedSignals, extractData]);
+    if (!Array.isArray(fillData?.clarificationQuestions)) return [];
+    return fillData.clarificationQuestions
+      .filter((question: any) =>
+        typeof question?.signalId === "string" &&
+        typeof question?.title === "string" &&
+        typeof question?.evidence === "string" &&
+        typeof question?.question === "string" &&
+        question.evidence.trim() &&
+        question.question.includes("?")
+      )
+      .slice(0, 3);
+  }, [fillData]);
 
   // Handle follow up answering
   const handleAnswer = (ans: "yes" | "no" | "not_sure") => {
@@ -919,7 +919,22 @@ export default function ScanPage() {
 
     setFollowUpAnswers((prev) => ({ ...prev, [q.signalId]: ans }));
     if (ans === "yes") {
-      setConfirmedIds((prev) => [...prev, q.signalId]);
+      const existingGroup = mergedSignals.find(
+        (signal) => signal.id === q.signalId || signal.constituentIds.includes(q.signalId)
+      );
+      const promoted = existingGroup || mergeSignals([q.signalId])[0];
+      if (promoted) {
+        if (!existingGroup) {
+          setMergedSignals((previous) => [
+            ...previous,
+            { ...promoted, severity: "red", weight: 3, isConfirmed: true },
+          ]);
+        }
+        const confirmedId = promoted.id;
+        setConfirmedIds((previous) =>
+          previous.includes(confirmedId) ? previous : [...previous, confirmedId]
+        );
+      }
     }
 
     if (currentQuestionIdx + 1 < questionsToAsk.length) {
@@ -1425,6 +1440,9 @@ export default function ScanPage() {
               <span className="text-xs font-mono uppercase text-[#B87518] font-bold">
                 Regarding: {activeQuestion.title}
               </span>
+              <p className="text-sm text-stone-700 leading-relaxed border-l-2 border-[#E8A33D] pl-3">
+                “{activeQuestion.evidence}”
+              </p>
               <p className="font-serif text-base sm:text-lg text-[#14213D] leading-snug">
                 {activeQuestion.question}
               </p>
