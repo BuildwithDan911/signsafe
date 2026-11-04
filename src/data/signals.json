@@ -490,6 +490,18 @@
   "verifyYourself": "Ask them to change or explain this clause in writing before you sign, and keep the reply."
  },
  {
+  "id": "RF3.15",
+  "library": "RED_FLAGS",
+  "title": "Uncapped liability",
+  "meaning": "The agreement expressly gives a named party unlimited liability, with no monetary cap.",
+  "severity": "red",
+  "example": "The Designer’s total liability under this agreement is unlimited.",
+  "askThem": "Can my liability be capped at the fees paid under this agreement, with narrow exceptions?",
+  "detectFrom": "document",
+  "checkedBy": "decide",
+  "verifyYourself": "Check whose liability is unlimited and ask for a clear monetary cap if that is your side."
+ },
+ {
   "id": "FM1",
   "library": "GIVEAWAYS",
   "title": "Editable .docx \"offer\" or \"contract\" from a supposedly large organisation",
