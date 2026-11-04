@@ -13,15 +13,15 @@ interface PaperCardProps extends React.HTMLAttributes<HTMLDivElement> {
 
 const badgeColorMap = {
   default: "bg-[#14213D]/5 text-[#14213D] border-[#14213D]/10",
-  red: "bg-[#D64545]/10 text-[#D64545] border-[#D64545]/20",
-  amber: "bg-[#E8A33D]/10 text-[#B87518] border-[#E8A33D]/25",
+  red: "bg-[#D64545]/10 text-[#A62626] border-[#D64545]/20",
+  amber: "bg-[#E8A33D]/10 text-[#8A560B] border-[#E8A33D]/25",
   green: "bg-[#2FA36B]/10 text-[#1E734A] border-[#2FA36B]/25",
 };
 
 const tabColorMap = {
-  red: "bg-[#D64545] text-white",
-  amber: "bg-[#E8A33D] text-white",
-  green: "bg-[#2FA36B] text-white",
+  red: "bg-[#A62626] text-white",
+  amber: "bg-[#E8A33D] text-[#14213D]",
+  green: "bg-[#1E734A] text-white",
   navy: "bg-[#14213D] text-[#FBF8F1]",
 };
 
@@ -36,8 +36,12 @@ export default function PaperCard({
   tabLabel,
   ...props
 }: PaperCardProps) {
+  const accessibleName = props["aria-label"] || badge || tabLabel || "SignSafe information card";
+
   const cardBody = (
     <div
+      role="group"
+      aria-label={accessibleName}
       className={`paper-card relative overflow-hidden p-5 sm:p-6 md:p-7 ${
         interactive ? "paper-card-interactive cursor-pointer" : ""
       } ${className}`}

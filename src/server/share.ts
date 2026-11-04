@@ -43,6 +43,18 @@ export interface ShareRecord {
   remainingPoints: number;
   rescoredWithClocked: boolean;
 }
+/** Describes whether the most recent rescore used a successful live Clocked Decide call. */
+export function getRescoreStatus(usedClockedDecide: boolean): {
+  rescoredWithClocked: boolean;
+  rescoreNote: string;
+} {
+  return {
+    rescoredWithClocked: usedClockedDecide,
+    rescoreNote: usedClockedDecide
+      ? "Rescored with Clocked Decide ✓"
+      : "Rescored locally (live check unavailable)",
+  };
+}
 
 /**
  * Gets or falls back to the share secret.

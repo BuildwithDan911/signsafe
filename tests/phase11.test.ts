@@ -7,6 +7,7 @@ import {
   generateShareId,
   ProposedFix,
   ShareRecord,
+  getRescoreStatus,
 } from "../src/server/share";
 import { computeScore } from "../src/lib/score";
 
@@ -198,13 +199,9 @@ describe("Phase 11: Fair-deal share link, decision record & live rescore", () =>
       const usedClockedDecide = true; // Real call succeeded
 
       shareState.fix.rescored = true;
-      if (usedClockedDecide) {
-        shareState.fix.rescoreNote = "Rescored with Clocked Decide ✓";
-        shareState.rescoredWithClocked = true;
-      } else {
-        shareState.fix.rescoreNote = "Rescored locally (live check unavailable)";
-        shareState.rescoredWithClocked = false;
-      }
+      const status = getRescoreStatus(usedClockedDecide);
+      shareState.fix.rescoreNote = status.rescoreNote;
+      shareState.rescoredWithClocked = status.rescoredWithClocked;
 
       expect(shareState.rescoredWithClocked).toBe(true);
       expect(shareState.fix.rescoreNote).toBe("Rescored with Clocked Decide ✓");
@@ -222,13 +219,9 @@ describe("Phase 11: Fair-deal share link, decision record & live rescore", () =>
       const usedClockedDecide = false; // Fallback triggered (out of credits, paused, or outage)
 
       shareState.fix.rescored = true;
-      if (usedClockedDecide) {
-        shareState.fix.rescoreNote = "Rescored with Clocked Decide ✓";
-        shareState.rescoredWithClocked = true;
-      } else {
-        shareState.fix.rescoreNote = "Rescored locally (live check unavailable)";
-        shareState.rescoredWithClocked = false;
-      }
+      const status = getRescoreStatus(usedClockedDecide);
+      shareState.fix.rescoreNote = status.rescoreNote;
+      shareState.rescoredWithClocked = status.rescoredWithClocked;
 
       expect(shareState.rescoredWithClocked).toBe(false);
       expect(shareState.fix.rescoreNote).toBe("Rescored locally (live check unavailable)");

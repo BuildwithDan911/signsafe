@@ -42,7 +42,7 @@ export default function JudgeRibbon({ recordedAt, onExit }: JudgeRibbonProps) {
     >
       <div className="max-w-[1100px] mx-auto flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[#E8A33D]/20 text-[#E8A33D] font-mono font-bold text-[11px] uppercase tracking-wider">
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[#E8A33D]/20 text-[#8A560B] font-mono font-bold text-[11px] uppercase tracking-wider">
             <Sparkles className="w-3 h-3" />
             Judge Mode
           </span>
@@ -54,7 +54,7 @@ export default function JudgeRibbon({ recordedAt, onExit }: JudgeRibbonProps) {
         <Link
           href="/"
           onClick={handleExit}
-          className="inline-flex items-center gap-1.5 text-[#E8A33D] hover:text-[#FBF8F1] font-semibold underline underline-offset-4 transition-colors"
+          className="inline-flex items-center gap-1.5 text-[#8A560B] hover:text-[#FBF8F1] font-semibold underline underline-offset-4 transition-colors"
         >
           <span>Upload your own document for a live check</span>
           <ArrowRight className="w-3.5 h-3.5" />

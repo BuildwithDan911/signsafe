@@ -32,7 +32,7 @@ export default function HowItWorks() {
               <path d="M20 28L24 32L28 28" stroke="#E8A33D" strokeWidth="2.5" />
             </svg>
           </div>
-          <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#E8A33D] mb-1">
+          <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#8A560B] mb-1">
             Step 1
           </span>
           <h3 className="font-serif text-lg sm:text-xl font-bold text-[#14213D] mb-2">
@@ -66,7 +66,7 @@ export default function HowItWorks() {
               />
             </svg>
           </div>
-          <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#E8A33D] mb-1">
+          <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#8A560B] mb-1">
             Step 2
           </span>
           <h3 className="font-serif text-lg sm:text-xl font-bold text-[#14213D] mb-2">
@@ -101,7 +101,7 @@ export default function HowItWorks() {
               />
             </svg>
           </div>
-          <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#2FA36B] mb-1">
+          <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#1E734A] mb-1">
             Step 3
           </span>
           <h3 className="font-serif text-lg sm:text-xl font-bold text-[#14213D] mb-2">

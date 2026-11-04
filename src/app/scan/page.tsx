@@ -989,7 +989,7 @@ export default function ScanPage() {
     return (
       <div className="min-h-screen bg-[#FBF8F1] flex items-center justify-center p-6 text-[#14213D]">
         <div className="text-sm font-medium flex items-center gap-2.5">
-          <Loader2 className="w-4 h-4 animate-spin text-[#E8A33D]" />
+          <Loader2 className="w-4 h-4 animate-spin text-[#8A560B]" />
           <span>Loading document from memory...</span>
         </div>
       </div>
@@ -1019,7 +1019,7 @@ export default function ScanPage() {
             Go to Home
           </Link>
         </main>
-        <footer className="border-t border-[#14213D]/10 p-6 text-center text-xs text-stone-500">
+        <footer className="border-t border-[#14213D]/10 p-6 text-center text-xs text-stone-600">
           SignSafe is not legal advice.
         </footer>
       </div>
@@ -1064,7 +1064,7 @@ export default function ScanPage() {
               stepsBreakdown={stepsBreakdown}
               onOpenCreditsModal={() => setIsCreditsModalOpen(true)}
             />
-            <div className="hidden sm:inline-flex items-center gap-1.5 text-xs text-stone-500 font-mono">
+            <div className="hidden sm:inline-flex items-center gap-1.5 text-xs text-stone-600 font-mono">
               <span className="w-1.5 h-1.5 rounded-full bg-[#2FA36B]" />
               Not legal advice
             </div>
@@ -1100,13 +1100,13 @@ export default function ScanPage() {
         {/* FULL-WIDTH RED-BORDERED BANNER: PROMPT INJECTION QUARANTINE */}
         {hasInjection && (
           <div className="border-2 border-[#D64545] bg-[#FEF2F2] rounded-2xl p-6 sm:p-7 shadow-sm space-y-3">
-            <div className="flex items-center gap-2.5 text-[#D64545]">
+            <div className="flex items-center gap-2.5 text-[#A62626]">
               <ShieldAlert className="w-6 h-6 flex-shrink-0" />
               <h2 className="font-serif text-xl sm:text-2xl font-bold tracking-tight">
                 This document is trying to trick AI checkers.
               </h2>
             </div>
-            <p className="text-xs sm:text-sm text-[#D64545]/90">
+            <p className="text-xs sm:text-sm text-[#A62626]/90">
               We removed this text before checking the rest, so it can&apos;t change our answer.
             </p>
 
@@ -1116,7 +1116,7 @@ export default function ScanPage() {
                   key={idx}
                   className="bg-white/95 border border-[#D64545]/30 rounded-xl p-3.5 shadow-2xs"
                 >
-                  <div className="text-[10px] font-mono uppercase tracking-wider text-[#D64545] font-bold mb-1">
+                  <div className="text-[10px] font-mono uppercase tracking-wider text-[#A62626] font-bold mb-1">
                     Quarantined Prompt Injection Quote #{idx + 1}
                   </div>
                   <pre className="text-xs sm:text-[13px] font-mono text-stone-900 bg-stone-50 p-2.5 rounded-lg whitespace-pre-wrap break-words border border-stone-200/70 leading-relaxed">
@@ -1131,7 +1131,7 @@ export default function ScanPage() {
         {/* HIDDEN CODE ALERT CARD (INSPECT RESULT) */}
         {inspectData && (inspectData.hasMalicious || inspectData.hasSuspicious) && (
           <div className="border-2 border-[#D64545] bg-[#FEF2F2] rounded-2xl p-6 shadow-sm space-y-3">
-            <div className="flex items-center gap-2 text-[#D64545]">
+            <div className="flex items-center gap-2 text-[#A62626]">
               <AlertTriangle className="w-5 h-5 flex-shrink-0" />
               <h3 className="font-serif text-lg font-bold">
                 Hidden code detected:{" "}
@@ -1141,7 +1141,7 @@ export default function ScanPage() {
                 </span>
               </h3>
             </div>
-            <p className="text-xs text-[#D64545]/85">
+            <p className="text-xs text-[#A62626]/85">
               Code or terminal commands found inside the document that request execution:
             </p>
             <div className="space-y-2">
@@ -1152,7 +1152,7 @@ export default function ScanPage() {
                     key={idx}
                     className="bg-stone-900 text-stone-100 p-3 rounded-xl font-mono text-xs overflow-x-auto"
                   >
-                    <div className="flex justify-between text-stone-400 text-[10px] pb-1 border-b border-stone-800">
+                    <div className="flex justify-between text-stone-600 text-[10px] pb-1 border-b border-stone-800">
                       <span>VERDICT: {r.verdict.toUpperCase()}</span>
                       <span>ORIGIN: {r.origin}</span>
                     </div>
@@ -1169,7 +1169,7 @@ export default function ScanPage() {
         {protectData && (
           <div className="bg-white border border-[#14213D]/12 rounded-xl p-4 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2 text-xs sm:text-sm text-stone-800">
-              <Lock className="w-4 h-4 text-[#2FA36B] flex-shrink-0" />
+              <Lock className="w-4 h-4 text-[#1E734A] flex-shrink-0" />
               <span>
                 We found <strong>{protectData.totalCount}</strong> personal details. Anything shared or saved is redacted.
               </span>
@@ -1187,7 +1187,7 @@ export default function ScanPage() {
         {/* REDACTED TEXT VIEWER (IF TOGGLED) */}
         {showRedacted && protectData?.anonymized_text && (
           <div className="bg-white border border-[#14213D]/15 rounded-xl p-5 shadow-sm space-y-2 animate-fadeIn">
-            <div className="flex items-center justify-between text-xs text-stone-500 font-mono pb-2 border-b border-stone-100">
+            <div className="flex items-center justify-between text-xs text-stone-600 font-mono pb-2 border-b border-stone-100">
               <span>PROTECT REDACTED COPY</span>
               <span>Tokens: &lt;PERSON&gt;, &lt;EMAIL&gt;, &lt;BANK_ACCOUNT&gt;</span>
             </div>
@@ -1199,7 +1199,7 @@ export default function ScanPage() {
 
         {/* 6-STEP VERTICAL PAPER PROGRESS LIST */}
         <div className="space-y-3">
-          <div className="pb-1 flex justify-between items-center text-xs text-stone-500 font-mono uppercase tracking-wider">
+          <div className="pb-1 flex justify-between items-center text-xs text-stone-600 font-mono uppercase tracking-wider">
             <span>Audit Pipeline Progression</span>
             <span>Clocked Multi-Stage Engine</span>
           </div>
@@ -1219,10 +1219,10 @@ export default function ScanPage() {
                 <div className="flex items-start gap-3">
                   <div className="mt-0.5 flex-shrink-0">
                     {step.status === "running" && (
-                      <Loader2 className="w-5 h-5 text-[#E8A33D] animate-spin" />
+                      <Loader2 className="w-5 h-5 text-[#8A560B] animate-spin" />
                     )}
                     {step.status === "done" && (
-                      <CheckCircle2 className="w-5 h-5 text-[#2FA36B]" />
+                      <CheckCircle2 className="w-5 h-5 text-[#1E734A]" />
                     )}
                     {step.status === "error" && (
                       <AlertTriangle className="w-5 h-5 text-amber-600" />
@@ -1234,7 +1234,7 @@ export default function ScanPage() {
 
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-mono uppercase text-stone-400">
+                      <span className="text-[10px] font-mono uppercase text-stone-600">
                         Step {idx + 1}
                       </span>
                       <h3 className="font-serif text-base font-bold text-[#14213D]">
@@ -1253,7 +1253,7 @@ export default function ScanPage() {
 
                 <div className="text-right flex-shrink-0 text-xs font-mono">
                   {step.status === "done" && (
-                    <span className="text-stone-500">
+                    <span className="text-stone-600">
                       {step.cached ? (
                         <span className="px-2 py-0.5 rounded bg-stone-100 text-stone-600">
                           cached • 0 cr
@@ -1290,14 +1290,14 @@ export default function ScanPage() {
           <div className="paper-card rounded-2xl p-6 sm:p-8 bg-[#FAF7F0] border-2 border-[#E8A33D]/50 shadow-md space-y-4 animate-fadeIn">
             <div className="flex items-center justify-between border-b border-[#14213D]/10 pb-3">
               <div className="flex items-center gap-2">
-                <HelpCircle className="w-5 h-5 text-[#E8A33D]" />
+                <HelpCircle className="w-5 h-5 text-[#8A560B]" />
                 <h2 className="font-serif text-lg sm:text-xl font-bold text-[#14213D]">
                   A few quick questions ({currentQuestionIdx + 1} of {questionsToAsk.length})
                 </h2>
               </div>
               <button
                 onClick={() => setQuestionsDone(true)}
-                className="text-xs text-stone-500 hover:text-stone-800 underline font-mono cursor-pointer"
+                className="text-xs text-stone-600 hover:text-stone-800 underline font-mono cursor-pointer"
               >
                 Skip all
               </button>
@@ -1315,7 +1315,7 @@ export default function ScanPage() {
             <div className="pt-2 flex flex-wrap items-center gap-3">
               <button
                 onClick={() => handleAnswer("yes")}
-                className="px-5 py-2.5 rounded-xl bg-[#D64545] hover:bg-[#b53333] text-white text-xs sm:text-sm font-semibold transition shadow-xs cursor-pointer"
+                className="px-5 py-2.5 rounded-xl bg-[#A62626] hover:bg-[#861E1E] text-white text-xs sm:text-sm font-semibold transition shadow-xs cursor-pointer"
               >
                 Yes, that happened
               </button>
@@ -1343,7 +1343,7 @@ export default function ScanPage() {
               className="w-full sm:w-auto px-8 py-4 bg-[#14213D] hover:bg-[#1f3158] text-[#FBF8F1] text-base sm:text-lg font-semibold rounded-2xl shadow-lg transition-all duration-200 inline-flex items-center justify-center gap-3 cursor-pointer"
             >
               <span>View Final Audit Results</span>
-              <ArrowRight className="w-5 h-5 text-[#E8A33D]" />
+              <ArrowRight className="w-5 h-5 text-[#8A560B]" />
             </button>
           </div>
         )}
@@ -1358,7 +1358,7 @@ export default function ScanPage() {
                   Key Facts Extracted
                 </h2>
               </div>
-              <span className="text-xs font-mono text-stone-500">
+              <span className="text-xs font-mono text-stone-600">
                 Verbatim facts copied from document
               </span>
             </div>
@@ -1388,13 +1388,13 @@ export default function ScanPage() {
                     key={fieldName}
                     className="p-3.5 rounded-xl border border-stone-100 bg-[#FAF7F0] space-y-1"
                   >
-                    <span className="text-[11px] font-mono uppercase tracking-wider text-stone-500 font-semibold block">
+                    <span className="text-[11px] font-mono uppercase tracking-wider text-stone-600 font-semibold block">
                       {label}
                     </span>
                     <div
                       className={`text-sm font-medium ${
                         isNotStated
-                          ? "text-stone-400 italic font-mono text-xs"
+                          ? "text-stone-600 italic font-mono text-xs"
                           : "text-stone-900"
                       }`}
                     >
@@ -1410,7 +1410,7 @@ export default function ScanPage() {
 
       {/* Footer */}
       <footer className="w-full border-t border-[#14213D]/10 py-6 sm:py-8 bg-[#FBF8F1]">
-        <div className="max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left text-xs sm:text-sm text-[#14213D]/65">
+        <div className="max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left text-xs sm:text-sm text-[#14213D]/70">
           <p>SignSafe is not legal advice. It helps you spot things to ask about.</p>
           <div className="flex items-center gap-4 font-mono text-xs">
             <button

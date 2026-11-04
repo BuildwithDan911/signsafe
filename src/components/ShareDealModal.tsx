@@ -100,7 +100,7 @@ export function ShareDealModal({
       <div className="paper-card w-full max-w-lg bg-[#FBF8F1] border-2 border-[#14213D]/20 rounded-2xl p-6 sm:p-8 shadow-2xl space-y-6">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#2FA36B]/15 text-[#2FA36B] flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-[#2FA36B]/15 text-[#1E734A] flex items-center justify-center">
               <Share2 className="w-5 h-5" />
             </div>
             <div>
@@ -114,7 +114,9 @@ export function ShareDealModal({
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-stone-500 hover:text-[#14213D] hover:bg-[#14213D]/5 transition-colors"
+            type="button"
+            aria-label="Close share dialog"
+            className="p-2 rounded-lg text-stone-600 hover:text-[#14213D] hover:bg-[#14213D]/5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14213D]"
           >
             <X className="w-5 h-5" />
           </button>
@@ -141,7 +143,7 @@ export function ShareDealModal({
           <div className="space-y-4">
             {/* Note banner */}
             <div className="p-3.5 rounded-xl bg-[#14213D]/5 border border-[#14213D]/10 text-xs text-[#14213D]/80 flex items-start gap-2.5">
-              <ShieldCheck className="w-4 h-4 text-[#2FA36B] shrink-0 mt-0.5" />
+              <ShieldCheck className="w-4 h-4 text-[#1E734A] shrink-0 mt-0.5" />
               <div>
                 <span className="font-semibold text-[#14213D]">
                   Both links show a redacted copy. Anyone with a link can view it.
@@ -167,7 +169,7 @@ export function ShareDealModal({
                 >
                   {copiedRole === "you" ? (
                     <>
-                      <Check className="w-3.5 h-3.5 text-[#2FA36B]" />
+                      <Check className="w-3.5 h-3.5 text-[#1E734A]" />
                       <span>Copied</span>
                     </>
                   ) : (
@@ -197,7 +199,7 @@ export function ShareDealModal({
                 >
                   {copiedRole === "other" ? (
                     <>
-                      <Check className="w-3.5 h-3.5 text-[#2FA36B]" />
+                      <Check className="w-3.5 h-3.5 text-[#1E734A]" />
                       <span>Copied</span>
                     </>
                   ) : (
@@ -216,13 +218,13 @@ export function ShareDealModal({
                 href={links.relativeYouLink}
                 target="_blank"
                 rel="noreferrer"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#2FA36B] text-white text-xs font-bold rounded-lg hover:bg-[#2FA36B]/90 transition-colors shadow-sm"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#1E734A] text-white text-xs font-bold rounded-lg hover:bg-[#15583B] transition-colors shadow-sm"
               >
                 <span>Open Your Link</span>
                 <ExternalLink className="w-3.5 h-3.5" />
               </a>
 
-              <span className="text-[11px] text-stone-500">
+              <span className="text-[11px] text-stone-600">
                 Expires in 30 days
               </span>
             </div>

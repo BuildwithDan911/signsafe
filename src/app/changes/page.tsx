@@ -161,7 +161,7 @@ export default function ChangesPage() {
               <span className="font-serif text-xl sm:text-2xl font-bold tracking-tight text-[#14213D] leading-tight">
                 SignSafe
               </span>
-              <span className="text-[10px] font-mono uppercase tracking-widest text-[#14213D]/60 -mt-0.5">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-[#14213D]/70 -mt-0.5">
                 Version Compare
               </span>
             </div>
@@ -174,7 +174,7 @@ export default function ChangesPage() {
               stepsBreakdown={compareStepsBreakdown}
               onOpenCreditsModal={() => setIsCreditsModalOpen(true)}
             />
-            <span className="hidden sm:inline-block text-xs font-mono uppercase tracking-wider text-[#14213D]/50 border-l border-[#14213D]/10 pl-3">
+            <span className="hidden sm:inline-block text-xs font-mono uppercase tracking-wider text-[#14213D]/70 border-l border-[#14213D]/10 pl-3">
               Not legal advice
             </span>
           </div>
@@ -199,8 +199,8 @@ export default function ChangesPage() {
         {/* Error State */}
         {error && !isLoading && (
           <div className="paper-card p-8 border-[#D64545]/40 text-center space-y-4 max-w-lg mx-auto">
-            <AlertTriangle className="w-8 h-8 text-[#D64545] mx-auto" />
-            <h2 className="font-serif text-xl font-bold text-[#D64545]">
+            <AlertTriangle className="w-8 h-8 text-[#A62626] mx-auto" />
+            <h2 className="font-serif text-xl font-bold text-[#A62626]">
               Comparison Failed
             </h2>
             <p className="text-sm text-[#14213D]/75">{error}</p>
@@ -222,7 +222,7 @@ export default function ChangesPage() {
             {/* Meaning check unavailable banner fallback */}
             {data.meaningUnavailable && (
               <div className="paper-card p-4 sm:p-5 border-l-4 border-l-[#E8A33D] bg-[#E8A33D]/10 flex items-center gap-3 text-sm text-[#14213D]">
-                <AlertTriangle className="w-5 h-5 text-[#E8A33D] flex-shrink-0" />
+                <AlertTriangle className="w-5 h-5 text-[#8A560B] flex-shrink-0" />
                 <div>
                   <span className="font-semibold block">Meaning check unavailable</span>
                   <span className="text-[#14213D]/80">
@@ -269,7 +269,7 @@ export default function ChangesPage() {
                     color={data.sealColor}
                     animate={true}
                   />
-                  <span className="text-[11px] font-mono uppercase tracking-widest text-[#14213D]/65 mt-2 font-semibold">
+                  <span className="text-[11px] font-mono uppercase tracking-widest text-[#14213D]/70 mt-2 font-semibold">
                     {data.sealColor === "red"
                       ? "Don't sign yet"
                       : data.sealColor === "amber"
@@ -289,7 +289,7 @@ export default function ChangesPage() {
                     {data.changes.length}
                   </span>
                 </h2>
-                <span className="text-xs font-mono text-[#14213D]/60 hidden sm:inline-block">
+                <span className="text-xs font-mono text-[#14213D]/70 hidden sm:inline-block">
                   Verified with Clocked Compare &amp; Decide
                 </span>
               </div>
@@ -303,9 +303,9 @@ export default function ChangesPage() {
                   const isWorse = chg.verdict === "worse";
                   const isBetter = chg.verdict === "better";
                   const badgeColor = isWorse
-                    ? "bg-[#D64545]/15 text-[#D64545] border-[#D64545]/30"
+                    ? "bg-[#D64545]/15 text-[#A62626] border-[#D64545]/30"
                     : isBetter
-                    ? "bg-[#2FA36B]/15 text-[#2FA36B] border-[#2FA36B]/30"
+                    ? "bg-[#2FA36B]/15 text-[#1E734A] border-[#2FA36B]/30"
                     : "bg-[#14213D]/10 text-[#14213D]/80 border-[#14213D]/20";
 
                   const badgeText = isWorse
@@ -339,9 +339,9 @@ export default function ChangesPage() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Before Panel */}
                         <div className="p-4 rounded-xl bg-[#FFFFFF]/80 border border-[#14213D]/12 space-y-2">
-                          <div className="flex items-center justify-between text-xs font-mono uppercase font-semibold text-[#14213D]/65">
+                          <div className="flex items-center justify-between text-xs font-mono uppercase font-semibold text-[#14213D]/70">
                             <span>Before (Version 1)</span>
-                            <span className="text-[#D64545] font-bold">Removed words struck</span>
+                            <span className="text-[#A62626] font-bold">Removed words struck</span>
                           </div>
                           <div className="text-sm sm:text-[15px] leading-relaxed text-[#14213D] font-serif pt-1">
                             {chg.diff.map((part, pIdx) => {
@@ -349,7 +349,7 @@ export default function ChangesPage() {
                                 return (
                                   <span
                                     key={pIdx}
-                                    className="bg-[#D64545]/15 text-[#D64545] line-through font-semibold px-1 py-0.5 rounded mx-0.5 inline"
+                                    className="bg-[#D64545]/15 text-[#A62626] line-through font-semibold px-1 py-0.5 rounded mx-0.5 inline"
                                   >
                                     {part.value}
                                   </span>
@@ -365,9 +365,9 @@ export default function ChangesPage() {
 
                         {/* After Panel */}
                         <div className="p-4 rounded-xl bg-[#FFFFFF]/80 border border-[#14213D]/12 space-y-2">
-                          <div className="flex items-center justify-between text-xs font-mono uppercase font-semibold text-[#14213D]/65">
+                          <div className="flex items-center justify-between text-xs font-mono uppercase font-semibold text-[#14213D]/70">
                             <span>After (Version 2)</span>
-                            <span className="text-[#2FA36B] font-bold">Added words highlighted</span>
+                            <span className="text-[#1E734A] font-bold">Added words highlighted</span>
                           </div>
                           <div className="text-sm sm:text-[15px] leading-relaxed text-[#14213D] font-serif pt-1">
                             {chg.diff.map((part, pIdx) => {
@@ -395,7 +395,7 @@ export default function ChangesPage() {
                         <div className="p-4 sm:p-5 rounded-xl bg-[#FBF8F1] border border-[#14213D]/15 space-y-2.5">
                           <div className="flex items-center justify-between">
                             <span className="text-xs font-mono uppercase tracking-wider font-bold text-[#14213D]/70 flex items-center gap-1.5">
-                              <Info className="w-3.5 h-3.5 text-[#E8A33D]" />
+                              <Info className="w-3.5 h-3.5 text-[#8A560B]" />
                               <span>What to ask them:</span>
                             </span>
                             <button
@@ -404,7 +404,7 @@ export default function ChangesPage() {
                             >
                               {copiedId === chg.id ? (
                                 <>
-                                  <Check className="w-3.5 h-3.5 text-[#2FA36B]" />
+                                  <Check className="w-3.5 h-3.5 text-[#1E734A]" />
                                   <span>Copied ✓</span>
                                 </>
                               ) : (
@@ -423,7 +423,7 @@ export default function ChangesPage() {
 
                       {/* Card Details Accordion */}
                       <details className="group pt-2 border-t border-[#14213D]/10">
-                        <summary className="text-xs font-mono uppercase text-[#14213D]/60 hover:text-[#14213D] cursor-pointer flex items-center gap-1 select-none">
+                        <summary className="text-xs font-mono uppercase text-[#14213D]/70 hover:text-[#14213D] cursor-pointer flex items-center gap-1 select-none">
                           <ChevronDown className="w-3.5 h-3.5 transition-transform group-open:rotate-180" />
                           <span>Audit Details ({Math.round(chg.confidence * 100)}% confidence)</span>
                         </summary>
@@ -467,13 +467,13 @@ export default function ChangesPage() {
               >
                 <summary className="cursor-pointer font-serif text-lg font-bold text-[#14213D] flex items-center justify-between select-none">
                   <div className="flex items-center gap-2">
-                    <ChevronDown className="w-5 h-5 transition-transform group-open:rotate-180 text-[#14213D]/60" />
+                    <ChevronDown className="w-5 h-5 transition-transform group-open:rotate-180 text-[#14213D]/70" />
                     <span>Wording-only changes</span>
                     <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-[#14213D]/10 text-[#14213D]">
                       {data.wordingOnlyChanges.length}
                     </span>
                   </div>
-                  <span className="text-xs font-mono font-normal text-[#14213D]/60">
+                  <span className="text-xs font-mono font-normal text-[#14213D]/70">
                     Not flagged as meaning changes
                   </span>
                 </summary>
@@ -492,13 +492,13 @@ export default function ChangesPage() {
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
                         <div className="p-2.5 rounded bg-[#FBF8F1] border border-[#14213D]/10">
-                          <span className="block font-mono text-[10px] uppercase font-bold text-[#14213D]/50 mb-1">
+                          <span className="block font-mono text-[10px] uppercase font-bold text-[#14213D]/70 mb-1">
                             Before:
                           </span>
                           <span>{word.beforeText || "(empty)"}</span>
                         </div>
                         <div className="p-2.5 rounded bg-[#FBF8F1] border border-[#14213D]/10">
-                          <span className="block font-mono text-[10px] uppercase font-bold text-[#14213D]/50 mb-1">
+                          <span className="block font-mono text-[10px] uppercase font-bold text-[#14213D]/70 mb-1">
                             After:
                           </span>
                           <span>{word.afterText || "(empty)"}</span>
@@ -520,7 +520,7 @@ export default function ChangesPage() {
                 <span>Check Another Document</span>
               </Link>
 
-              <div className="text-xs text-[#14213D]/65 font-mono text-center sm:text-right">
+              <div className="text-xs text-[#14213D]/70 font-mono text-center sm:text-right">
                 <span>Clocked Compare + Decide + Diff</span>
               </div>
             </div>
@@ -529,7 +529,7 @@ export default function ChangesPage() {
       </main>
 
       {/* Footer */}
-      <footer className="w-full border-t border-[#14213D]/10 py-6 bg-[#FBF8F1] text-center text-xs sm:text-sm text-[#14213D]/65">
+      <footer className="w-full border-t border-[#14213D]/10 py-6 bg-[#FBF8F1] text-center text-xs sm:text-sm text-[#14213D]/70">
         <div className="max-w-[1100px] mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <span>SignSafe is not legal advice. It helps you spot things to ask about.</span>
           <div className="flex items-center gap-3 font-mono text-xs">

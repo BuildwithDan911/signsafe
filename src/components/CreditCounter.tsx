@@ -37,12 +37,12 @@ export default function CreditCounter({
       >
         {isJudgeMode ? (
           <>
-            <Sparkles className="w-3.5 h-3.5 text-[#E8A33D]" />
+            <Sparkles className="w-3.5 h-3.5 text-[#8A560B]" />
             <span className="font-semibold">0 credits (recorded)</span>
           </>
         ) : (
           <>
-            <Coins className="w-3.5 h-3.5 text-[#E8A33D]" />
+            <Coins className="w-3.5 h-3.5 text-[#8A560B]" />
             <span>
               This check:{" "}
               <strong className="font-bold text-[#14213D]">{totalCredits}</strong> credits
@@ -59,7 +59,7 @@ export default function CreditCounter({
         >
           <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/10 font-sans font-semibold">
             <span>{isJudgeMode ? "Replay Mode" : "Step Breakdown"}</span>
-            <span className="font-mono text-[#E8A33D]">
+            <span className="font-mono text-[#8A560B]">
               {isJudgeMode ? "0 credits" : `${totalCredits} credits`}
             </span>
           </div>
@@ -75,7 +75,7 @@ export default function CreditCounter({
                   <span className="text-[#FBF8F1]/85 truncate max-w-[140px]">{s.name}</span>
                   <span className="shrink-0 flex items-center gap-1">
                     {s.cached ? (
-                      <span className="text-[#2FA36B] text-[10px]">(cached - 0)</span>
+                      <span className="text-[#1E734A] text-[10px]">(cached - 0)</span>
                     ) : (
                       <span>{s.credits} cr</span>
                     )}
@@ -98,7 +98,7 @@ export default function CreditCounter({
                   setShowTooltip(false);
                   onOpenCreditsModal();
                 }}
-                className="text-[11px] text-[#E8A33D] hover:underline cursor-pointer inline-flex items-center gap-1"
+                className="text-[11px] text-[#8A560B] hover:underline cursor-pointer inline-flex items-center gap-1"
               >
                 <HelpCircle className="w-3 h-3" />
                 How credits work

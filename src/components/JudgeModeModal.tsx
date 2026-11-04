@@ -61,13 +61,13 @@ export default function JudgeModeModal({ isOpen, onClose }: JudgeModeModalProps)
         <button
           onClick={onClose}
           aria-label="Close Judge Mode dialog"
-          className="absolute top-5 right-5 p-2 text-[#14213D]/60 hover:text-[#14213D] hover:bg-[#14213D]/5 rounded-full transition-colors"
+          className="absolute top-5 right-5 p-2 text-[#14213D]/70 hover:text-[#14213D] hover:bg-[#14213D]/5 rounded-full transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
 
         <div className="flex items-start gap-3.5 mb-6">
-          <div className="w-11 h-11 rounded-xl bg-[#14213D] text-[#E8A33D] flex items-center justify-center shrink-0 shadow-sm">
+          <div className="w-11 h-11 rounded-xl bg-[#14213D] text-[#8A560B] flex items-center justify-center shrink-0 shadow-sm">
             <Sparkles className="w-6 h-6" />
           </div>
           <div>
@@ -105,7 +105,7 @@ export default function JudgeModeModal({ isOpen, onClose }: JudgeModeModalProps)
                   <span
                     className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold font-mono ${
                       sample.sealColor === "red"
-                        ? "bg-[#D64545]/15 text-[#D64545]"
+                        ? "bg-[#D64545]/15 text-[#A62626]"
                         : "bg-[#E8A33D]/20 text-[#14213D]"
                     }`}
                   >
@@ -127,13 +127,13 @@ export default function JudgeModeModal({ isOpen, onClose }: JudgeModeModalProps)
                 <ul className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-[#14213D]/70 font-mono">
                   {sample.highlights.map((h, i) => (
                     <li key={i} className="flex items-center gap-1">
-                      <span className="text-[#2FA36B]">✓</span>
+                      <span className="text-[#1E734A]">✓</span>
                       <span>{h}</span>
                     </li>
                   ))}
                 </ul>
 
-                <span className="inline-flex items-center gap-1 text-xs font-bold text-[#14213D] group-hover:text-[#E8A33D] group-hover:translate-x-0.5 transition-all">
+                <span className="inline-flex items-center gap-1 text-xs font-bold text-[#14213D] group-hover:text-[#8A560B] group-hover:translate-x-0.5 transition-all">
                   <span>Replay this run</span>
                   <ArrowRight className="w-4 h-4" />
                 </span>

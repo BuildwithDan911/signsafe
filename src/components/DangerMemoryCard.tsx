@@ -83,14 +83,14 @@ export function DangerMemoryCard({
         <section className="paper-card rounded-2xl p-6 sm:p-7 bg-[#FFFBEB] border-2 border-[#E8A33D]/40 shadow-sm space-y-4 text-left">
           <div className="flex items-start justify-between gap-3 border-b border-[#E8A33D]/20 pb-3">
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-[#E8A33D]/15 text-[#E8A33D] flex items-center justify-center shrink-0">
+              <div className="w-9 h-9 rounded-xl bg-[#E8A33D]/15 text-[#8A560B] flex items-center justify-center shrink-0">
                 <History className="w-5 h-5" />
               </div>
               <div>
                 <h3 className="font-serif text-lg sm:text-xl font-bold text-[#14213D]">
                   Seen before: this matches a template seen in {currentCount} earlier checks ({dangerMatch.docType})
                 </h3>
-                <span className="text-xs font-mono font-semibold text-[#E8A33D] uppercase tracking-wide">
+                <span className="text-xs font-mono font-semibold text-[#8A560B] uppercase tracking-wide">
                   Template Cluster Identified • IN4 Signal Added (+1 point)
                 </span>
               </div>
@@ -114,7 +114,7 @@ export function DangerMemoryCard({
             </div>
 
             <div className="p-3.5 rounded-xl bg-white border border-[#E8A33D]/30 text-xs space-y-1">
-              <span className="font-bold text-[#E8A33D] block">
+              <span className="font-bold text-[#8A560B] block">
                 Earlier flagged template says:
               </span>
               <p className="text-stone-700 italic leading-relaxed">
@@ -123,7 +123,7 @@ export function DangerMemoryCard({
             </div>
           </div>
 
-          <div className="pt-1 text-[11px] text-stone-500 italic">
+          <div className="pt-1 text-[11px] text-stone-600 italic">
             Danger memory currently holds synthetic demo patterns.
           </div>
         </section>
@@ -138,7 +138,7 @@ export function DangerMemoryCard({
               checked={contributeTicked}
               disabled={contributeSuccess || contributing}
               onChange={handleToggleContribute}
-              className="w-4 h-4 rounded border-[#14213D]/30 text-[#2FA36B] focus:ring-[#2FA36B]"
+              className="w-4 h-4 rounded border-[#14213D]/30 text-[#1E734A] focus:ring-[#2FA36B]"
             />
             <div className="text-xs sm:text-sm font-semibold text-[#14213D]">
               Help others: add an anonymised pattern of this document to the danger memory
@@ -146,12 +146,12 @@ export function DangerMemoryCard({
           </label>
 
           {contributeSuccess ? (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-[#2FA36B] bg-[#2FA36B]/15 shrink-0">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-[#1E734A] bg-[#2FA36B]/15 shrink-0">
               <Check className="w-3.5 h-3.5 stroke-[3]" />
               Pattern added to danger memory
             </span>
           ) : (
-            <span className="text-[11px] text-stone-500 font-mono shrink-0">
+            <span className="text-[11px] text-stone-600 font-mono shrink-0">
               Never stores original text
             </span>
           )}

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyRoleToken, ShareRecord } from "@/server/share";
+import { verifyRoleToken, ShareRecord, getRescoreStatus } from "@/server/share";
 import { storeGet, storeSet } from "@/server/store";
 import { computeScore } from "@/lib/score";
 import { callClocked } from "@/server/clocked";
@@ -161,13 +161,9 @@ export async function PATCH(req: NextRequest, { params }: RouteProps) {
         };
 
         fix.rescored = true;
-        if (usedClockedDecide) {
-          fix.rescoreNote = "Rescored with Clocked Decide ✓";
-          share.rescoredWithClocked = true;
-        } else {
-          fix.rescoreNote = "Rescored locally (live check unavailable)";
-          share.rescoredWithClocked = false;
-        }
+        const rescoreStatus = getRescoreStatus(usedClockedDecide);
+        fix.rescoreNote = rescoreStatus.rescoreNote;
+        share.rescoredWithClocked = rescoreStatus.rescoredWithClocked;
       }
     }
 

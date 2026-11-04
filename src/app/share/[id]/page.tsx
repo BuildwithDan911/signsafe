@@ -212,7 +212,7 @@ export default function SharePage() {
 
         <main className="flex-1 w-full max-w-lg mx-auto px-4 py-16 flex flex-col items-center justify-center text-center">
           <div className="paper-card w-full p-8 sm:p-10 bg-white border border-[#D64545]/30 rounded-2xl space-y-5 shadow-lg">
-            <div className="w-14 h-14 rounded-full bg-[#D64545]/10 text-[#D64545] mx-auto flex items-center justify-center">
+            <div className="w-14 h-14 rounded-full bg-[#D64545]/10 text-[#A62626] mx-auto flex items-center justify-center">
               <AlertTriangle className="w-7 h-7" />
             </div>
             <h1 className="font-serif text-2xl sm:text-3xl font-bold text-[#14213D]">
@@ -233,7 +233,7 @@ export default function SharePage() {
           </div>
         </main>
 
-        <footer className="w-full border-t border-[#14213D]/10 py-6 bg-[#FBF8F1] text-center text-xs text-[#14213D]/65">
+        <footer className="w-full border-t border-[#14213D]/10 py-6 bg-[#FBF8F1] text-center text-xs text-[#14213D]/70">
           SignSafe is not legal advice. It helps you spot things to ask about.
         </footer>
       </div>
@@ -332,7 +332,7 @@ export default function SharePage() {
               className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase border ${
                 isYou
                   ? "bg-[#14213D]/10 text-[#14213D] border-[#14213D]/20"
-                  : "bg-[#2FA36B]/15 text-[#2FA36B] border-[#2FA36B]/30"
+                  : "bg-[#2FA36B]/15 text-[#1E734A] border-[#2FA36B]/30"
               }`}
             >
               <span className="w-2 h-2 rounded-full bg-current animate-pulse" />
@@ -348,19 +348,19 @@ export default function SharePage() {
         {(justRescored || rescoredWithClocked) && (
           <div className="p-4 rounded-2xl bg-[#2FA36B]/15 border-2 border-[#2FA36B]/40 flex items-center justify-between gap-3 animate-fadeIn">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-[#2FA36B] text-white flex items-center justify-center shrink-0">
+              <div className="w-9 h-9 rounded-xl bg-[#1E734A] text-white flex items-center justify-center shrink-0">
                 <Check className="w-5 h-5 stroke-[2.5]" />
               </div>
               <div>
                 <p className="text-sm font-bold text-[#14213D]">
-                  Rescored with Clocked Decide ✓
+{rescoredWithClocked ? "Rescored with Clocked Decide ✓" : "Rescored locally (live check unavailable)"}
                 </p>
                 <p className="text-xs text-stone-700">
                   Mutually accepted fair terms have replaced unfair clauses and improved the Sign Score.
                 </p>
               </div>
             </div>
-            <span className="text-[11px] font-mono font-semibold text-[#2FA36B] uppercase shrink-0">
+            <span className="text-[11px] font-mono font-semibold text-[#1E734A] uppercase shrink-0">
               Live Synced
             </span>
           </div>
@@ -370,8 +370,8 @@ export default function SharePage() {
         <div className="paper-card bg-white p-6 sm:p-8 rounded-2xl border border-[#14213D]/10 space-y-6 shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#14213D]/10">
             <div>
-              <div className="flex items-center gap-2 text-xs text-stone-500 font-mono mb-1">
-                <ShieldCheck className="w-4 h-4 text-[#2FA36B]" />
+              <div className="flex items-center gap-2 text-xs text-stone-600 font-mono mb-1">
+                <ShieldCheck className="w-4 h-4 text-[#1E734A]" />
                 <span>REDACTED FAIR-DEAL LINK</span>
                 <span>•</span>
                 <span>30-DAY EXPIRY</span>
@@ -415,12 +415,12 @@ export default function SharePage() {
                 size="md"
               />
               <div className="space-y-1">
-                <span className="text-xs font-mono uppercase tracking-wider text-stone-500">
+                <span className="text-xs font-mono uppercase tracking-wider text-stone-600">
                   Current Sign Score
                 </span>
                 <div className="font-serif text-2xl sm:text-3xl font-bold text-[#14213D] flex items-center gap-2">
                   <CountUp end={scoreResult.signScore} />
-                  <span className="text-sm font-sans font-normal text-stone-500">/ 100</span>
+                  <span className="text-sm font-sans font-normal text-stone-600">/ 100</span>
                 </div>
                 <p className="text-xs sm:text-sm text-stone-700 font-medium max-w-md">
                   {scoreResult.headline}
@@ -429,7 +429,7 @@ export default function SharePage() {
             </div>
 
             <div className="w-full sm:w-auto p-3.5 rounded-xl bg-[#14213D]/5 border border-[#14213D]/10 text-xs text-stone-600 space-y-1 sm:text-right font-mono">
-              <div className="text-[11px] uppercase tracking-wider text-stone-500 font-bold">
+              <div className="text-[11px] uppercase tracking-wider text-stone-600 font-bold">
                 Document SHA-256
               </div>
               <div className="text-[11px] text-[#14213D] break-all max-w-xs">
@@ -443,12 +443,12 @@ export default function SharePage() {
         <section className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-[#2FA36B]" />
+              <CheckCircle2 className="w-5 h-5 text-[#1E734A]" />
               <h2 className="font-serif text-xl sm:text-2xl font-bold text-[#14213D]">
                 Proposed Fair Fixes ({fixes.length})
               </h2>
             </div>
-            <span className="text-xs font-mono text-stone-500">
+            <span className="text-xs font-mono text-stone-600">
               {allAccepted
                 ? "All fixes mutually agreed ✓"
                 : "Awaiting mutual acceptance"}
@@ -481,12 +481,12 @@ export default function SharePage() {
                       </h3>
                       <div className="flex items-center gap-2">
                         {isMutuallyAccepted ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-[#2FA36B]/15 text-[#2FA36B] border border-[#2FA36B]/30">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-[#2FA36B]/15 text-[#1E734A] border border-[#2FA36B]/30">
                             <Check className="w-3.5 h-3.5 stroke-[3]" />
                             Accepted by both
                           </span>
                         ) : fix.youAccepted || fix.otherAccepted ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-[#E8A33D]/15 text-[#E8A33D] border border-[#E8A33D]/30">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-[#E8A33D]/15 text-[#8A560B] border border-[#E8A33D]/30">
                             <Clock className="w-3.5 h-3.5" />
                             {fix.youAccepted ? "Waiting for other side" : "Waiting for you"}
                           </span>
@@ -527,7 +527,7 @@ export default function SharePage() {
                           className={`inline-flex items-center gap-2.5 text-xs font-semibold ${
                             canCheckYou
                               ? "cursor-pointer text-[#14213D]"
-                              : "cursor-not-allowed opacity-60 text-stone-500"
+                              : "cursor-not-allowed opacity-60 text-stone-600"
                           }`}
                         >
                           <input
@@ -535,10 +535,10 @@ export default function SharePage() {
                             checked={fix.youAccepted}
                             disabled={!canCheckYou || actionLoading === fix.id}
                             onChange={() => handleToggleAccept(fix.id, fix.youAccepted)}
-                            className="w-4 h-4 rounded border-[#14213D]/30 text-[#2FA36B] focus:ring-[#2FA36B]"
+                            className="w-4 h-4 rounded border-[#14213D]/30 text-[#1E734A] focus:ring-[#2FA36B]"
                           />
                           <span>
-                            You accept {isYou && <span className="text-[10px] text-stone-500">(Your side)</span>}
+                            You accept {isYou && <span className="text-[10px] text-stone-600">(Your side)</span>}
                           </span>
                         </label>
 
@@ -547,7 +547,7 @@ export default function SharePage() {
                           className={`inline-flex items-center gap-2.5 text-xs font-semibold ${
                             canCheckOther
                               ? "cursor-pointer text-[#14213D]"
-                              : "cursor-not-allowed opacity-60 text-stone-500"
+                              : "cursor-not-allowed opacity-60 text-stone-600"
                           }`}
                         >
                           <input
@@ -555,10 +555,10 @@ export default function SharePage() {
                             checked={fix.otherAccepted}
                             disabled={!canCheckOther || actionLoading === fix.id}
                             onChange={() => handleToggleAccept(fix.id, fix.otherAccepted)}
-                            className="w-4 h-4 rounded border-[#14213D]/30 text-[#2FA36B] focus:ring-[#2FA36B]"
+                            className="w-4 h-4 rounded border-[#14213D]/30 text-[#1E734A] focus:ring-[#2FA36B]"
                           />
                           <span>
-                            Other side accepts {!isYou && <span className="text-[10px] text-stone-500">(Your side)</span>}
+                            Other side accepts {!isYou && <span className="text-[10px] text-stone-600">(Your side)</span>}
                           </span>
                         </label>
                       </div>
@@ -567,7 +567,7 @@ export default function SharePage() {
                         <span
                           className={`text-[11px] font-mono font-bold ${
                             share.rescoredWithClocked
-                              ? "text-[#2FA36B]"
+                              ? "text-[#1E734A]"
                               : "text-[#14213D]/70"
                           }`}
                         >
@@ -596,14 +596,14 @@ export default function SharePage() {
           <div className="paper-card bg-white p-6 sm:p-8 rounded-2xl border border-[#14213D]/10 font-mono text-xs sm:text-sm text-stone-800 leading-relaxed whitespace-pre-wrap max-h-96 overflow-y-auto">
             {redactedText}
           </div>
-          <p className="text-[11px] text-stone-500 italic">
+          <p className="text-[11px] text-stone-600 italic">
             When both sides accept a proposed fix, the clause in this view updates automatically.
           </p>
         </section>
       </main>
 
       {/* Screen Footer */}
-      <footer className="print:hidden w-full border-t border-[#14213D]/10 py-6 bg-[#FBF8F1] text-center text-xs text-[#14213D]/65">
+      <footer className="print:hidden w-full border-t border-[#14213D]/10 py-6 bg-[#FBF8F1] text-center text-xs text-[#14213D]/70">
         SignSafe is not legal advice. It helps you spot things to ask about.
       </footer>
     </div>

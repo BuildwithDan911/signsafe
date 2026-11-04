@@ -364,7 +364,7 @@ export default function HomePage() {
           aria-live="polite"
           className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 bg-[#14213D] text-[#FBF8F1] px-5 py-3 rounded-xl shadow-xl text-sm font-medium transition-all duration-300 animate-fadeIn border border-[#E8A33D]/30 max-w-md"
         >
-          <Info className="w-4 h-4 text-[#E8A33D] flex-shrink-0" />
+          <Info className="w-4 h-4 text-[#8A560B] flex-shrink-0" />
           <span>{toastMessage}</span>
         </div>
       )}
@@ -379,7 +379,7 @@ export default function HomePage() {
               <span className="font-serif text-2xl sm:text-3xl font-bold tracking-tight text-[#14213D] group-hover:opacity-90 leading-tight">
                 SignSafe
               </span>
-              <span className="text-[10px] sm:text-[11px] font-mono uppercase tracking-widest text-[#14213D]/60 -mt-0.5">
+              <span className="text-[10px] sm:text-[11px] font-mono uppercase tracking-widest text-[#14213D]/70 -mt-0.5">
                 Contract Audit
               </span>
             </div>
@@ -391,7 +391,7 @@ export default function HomePage() {
               onClick={() => setIsJudgeModalOpen(true)}
               className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg border border-[#14213D]/20 bg-white/80 hover:bg-white text-xs sm:text-sm font-semibold text-[#14213D] transition-all shadow-2xs hover:shadow-xs active:scale-[0.98] cursor-pointer"
             >
-              <ShieldAlert className="w-4 h-4 text-[#D64545]" />
+              <ShieldAlert className="w-4 h-4 text-[#A62626]" />
               <span className="hidden sm:inline">Judge Mode: see a full check in one click</span>
               <span className="sm:hidden">Judge Mode</span>
             </button>
@@ -440,7 +440,7 @@ export default function HomePage() {
                   >
                     <Icon
                       className={`w-4 h-4 ${
-                        isActive ? "text-[#E8A33D]" : "text-[#14213D]/50"
+                        isActive ? "text-[#8A560B]" : "text-[#14213D]/70"
                       }`}
                     />
                     <span className="whitespace-nowrap">{tab.label}</span>
@@ -456,11 +456,11 @@ export default function HomePage() {
               <div className="relative z-10 pl-5 sm:pl-10">
                 {isProcessing ? (
                   <div className="p-10 text-center space-y-3">
-                    <Loader2 className="w-8 h-8 text-[#E8A33D] animate-spin mx-auto" />
+                    <Loader2 className="w-8 h-8 text-[#8A560B] animate-spin mx-auto" />
                     <p className="font-serif text-lg font-bold text-[#14213D]">
                       {processingStatus || "Analyzing document..."}
                     </p>
-                    <p className="text-xs text-stone-500">
+                    <p className="text-xs text-stone-600">
                       Extracting text, hidden elements, metadata, and scripts in memory
                     </p>
                   </div>
@@ -491,7 +491,7 @@ export default function HomePage() {
                         <p className="font-serif text-lg sm:text-xl font-semibold text-[#14213D]">
                           Drag and drop your document here
                         </p>
-                        <p className="mt-1.5 text-xs sm:text-sm text-[#14213D]/65">
+                        <p className="mt-1.5 text-xs sm:text-sm text-[#14213D]/70">
                           Accepts PDF, Word (.docx), plain text, or contract photos (up to 3 MB)
                         </p>
 
@@ -523,7 +523,7 @@ export default function HomePage() {
                           className="w-full p-4 rounded-xl bg-[#FFFFFF]/90 border border-[#14213D]/20 focus:border-[#14213D] focus:ring-1 focus:ring-[#14213D] text-sm text-[#14213D] placeholder-[#14213D]/40 resize-none font-sans"
                         />
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pt-1">
-                          <span className="text-xs text-[#14213D]/60 font-mono">
+                          <span className="text-xs text-[#14213D]/70 font-mono">
                             Max 200,000 characters
                           </span>
                           <button
@@ -560,8 +560,8 @@ export default function HomePage() {
                             Fetch & Check
                           </button>
                         </div>
-                        <p className="text-xs text-[#14213D]/65 flex items-center gap-1.5">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-[#2FA36B]" />
+                        <p className="text-xs text-[#14213D]/70 flex items-center gap-1.5">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-[#1E734A]" />
                           Protected by SSRF firewall (internal and metadata IPs blocked)
                         </p>
                       </div>
@@ -601,12 +601,12 @@ export default function HomePage() {
                                 Version you saw first
                               </label>
                               {compareV1Text ? (
-                                <span className="text-[11px] font-mono font-semibold text-[#2FA36B] flex items-center gap-1">
+                                <span className="text-[11px] font-mono font-semibold text-[#1E734A] flex items-center gap-1">
                                   <CheckCircle2 className="w-3 h-3" />
                                   <span>Loaded ({compareV1Text.length} chars)</span>
                                 </span>
                               ) : (
-                                <span className="text-[11px] font-mono text-[#14213D]/50">Required</span>
+                                <span className="text-[11px] font-mono text-[#14213D]/70">Required</span>
                               )}
                             </div>
 
@@ -662,11 +662,11 @@ export default function HomePage() {
                                 onClick={() => fileV1InputRef.current?.click()}
                                 className="border border-dashed border-[#14213D]/30 rounded-lg p-5 bg-[#FBF8F1]/60 text-center cursor-pointer hover:bg-[#FBF8F1] transition-colors"
                               >
-                                <UploadCloud className="w-6 h-6 mx-auto text-[#14213D]/60 mb-1.5" />
+                                <UploadCloud className="w-6 h-6 mx-auto text-[#14213D]/70 mb-1.5" />
                                 <span className="text-xs text-[#14213D] font-medium block">
                                   {compareV1Name || "Upload PDF, Word, or Text"}
                                 </span>
-                                <span className="text-[10px] text-[#14213D]/50 font-mono">
+                                <span className="text-[10px] text-[#14213D]/70 font-mono">
                                   Click to browse file
                                 </span>
                               </div>
@@ -699,12 +699,12 @@ export default function HomePage() {
                                 New version
                               </label>
                               {compareV2Text ? (
-                                <span className="text-[11px] font-mono font-semibold text-[#2FA36B] flex items-center gap-1">
+                                <span className="text-[11px] font-mono font-semibold text-[#1E734A] flex items-center gap-1">
                                   <CheckCircle2 className="w-3 h-3" />
                                   <span>Loaded ({compareV2Text.length} chars)</span>
                                 </span>
                               ) : (
-                                <span className="text-[11px] font-mono text-[#14213D]/50">Required</span>
+                                <span className="text-[11px] font-mono text-[#14213D]/70">Required</span>
                               )}
                             </div>
 
@@ -760,11 +760,11 @@ export default function HomePage() {
                                 onClick={() => fileV2InputRef.current?.click()}
                                 className="border border-dashed border-[#14213D]/30 rounded-lg p-5 bg-[#FBF8F1]/60 text-center cursor-pointer hover:bg-[#FBF8F1] transition-colors"
                               >
-                                <UploadCloud className="w-6 h-6 mx-auto text-[#14213D]/60 mb-1.5" />
+                                <UploadCloud className="w-6 h-6 mx-auto text-[#14213D]/70 mb-1.5" />
                                 <span className="text-xs text-[#14213D] font-medium block">
                                   {compareV2Name || "Upload PDF, Word, or Text"}
                                 </span>
-                                <span className="text-[10px] text-[#14213D]/50 font-mono">
+                                <span className="text-[10px] text-[#14213D]/70 font-mono">
                                   Click to browse file
                                 </span>
                               </div>
@@ -853,10 +853,10 @@ export default function HomePage() {
                   </p>
                 </div>
                 <div className="mt-6 pt-3.5 border-t border-[#14213D]/10 flex items-center justify-between">
-                  <span className="text-xs font-mono uppercase tracking-wider text-[#D64545] font-bold">
+                  <span className="text-xs font-mono uppercase tracking-wider text-[#A62626] font-bold">
                     Advance fee scam
                   </span>
-                  <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#D64545]/10 text-[#D64545] hover:bg-[#D64545] hover:text-white text-xs font-semibold transition-all">
+                  <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#D64545]/10 text-[#A62626] hover:bg-[#A62626] hover:text-white text-xs font-semibold transition-all">
                     <span>Try this</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
@@ -891,7 +891,7 @@ export default function HomePage() {
                   <span className="text-xs font-mono uppercase tracking-wider text-[#B87518] font-bold">
                     Broken promises
                   </span>
-                  <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#E8A33D]/15 text-[#B87518] hover:bg-[#E8A33D] hover:text-white text-xs font-semibold transition-all">
+                  <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#E8A33D]/15 text-[#8A560B] hover:bg-[#8A560B] hover:text-white text-xs font-semibold transition-all">
                     <span>Try this</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
@@ -946,7 +946,7 @@ export default function HomePage() {
               onClick={() => setIsJudgeModalOpen(true)}
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-xl border-2 border-[#14213D] bg-white hover:bg-[#14213D] text-[#14213D] hover:text-[#FBF8F1] text-sm sm:text-base font-semibold transition-all duration-200 shadow-2xs hover:shadow-xs active:scale-[0.98] group flex-shrink-0 cursor-pointer"
             >
-              <ShieldAlert className="w-4 h-4 text-[#D64545] group-hover:text-[#FBF8F1]" />
+              <ShieldAlert className="w-4 h-4 text-[#A62626] group-hover:text-[#FBF8F1]" />
               <span>Judge Mode: see a full check in one click</span>
             </button>
           </div>
@@ -958,7 +958,7 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="w-full border-t border-[#14213D]/10 py-6 sm:py-8 bg-[#FBF8F1]">
-        <div className="max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left text-xs sm:text-sm text-[#14213D]/65">
+        <div className="max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left text-xs sm:text-sm text-[#14213D]/70">
           <p>SignSafe is not legal advice. It helps you spot things to ask about.</p>
           <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 font-mono text-xs">
             <button

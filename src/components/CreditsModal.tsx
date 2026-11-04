@@ -22,13 +22,13 @@ export default function CreditsModal({ isOpen, onClose }: CreditsModalProps) {
         <button
           onClick={onClose}
           aria-label="Close dialog"
-          className="absolute top-4 right-4 p-2 text-[#14213D]/60 hover:text-[#14213D] hover:bg-[#14213D]/5 rounded-full transition-colors"
+          className="absolute top-4 right-4 p-2 text-[#14213D]/70 hover:text-[#14213D] hover:bg-[#14213D]/5 rounded-full transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
 
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-[#E8A33D]/15 border border-[#E8A33D]/30 flex items-center justify-center text-[#E8A33D]">
+          <div className="w-10 h-10 rounded-xl bg-[#E8A33D]/15 border border-[#E8A33D]/30 flex items-center justify-center text-[#8A560B]">
             <Coins className="w-5 h-5" />
           </div>
           <div>
@@ -43,7 +43,7 @@ export default function CreditsModal({ isOpen, onClose }: CreditsModalProps) {
 
         <div className="space-y-4 text-sm leading-relaxed text-[#14213D]/85">
           <div className="p-3.5 bg-white/70 border border-[#14213D]/10 rounded-xl flex items-start gap-3">
-            <Zap className="w-5 h-5 text-[#E8A33D] shrink-0 mt-0.5" />
+            <Zap className="w-5 h-5 text-[#8A560B] shrink-0 mt-0.5" />
             <div>
               <p className="font-semibold text-[#14213D]">25 ms model time = 1 credit</p>
               <p className="text-xs sm:text-sm text-[#14213D]/75 mt-0.5">
@@ -54,7 +54,7 @@ export default function CreditsModal({ isOpen, onClose }: CreditsModalProps) {
           </div>
 
           <div className="p-3.5 bg-white/70 border border-[#14213D]/10 rounded-xl flex items-start gap-3">
-            <RefreshCw className="w-5 h-5 text-[#2FA36B] shrink-0 mt-0.5" />
+            <RefreshCw className="w-5 h-5 text-[#1E734A] shrink-0 mt-0.5" />
             <div>
               <p className="font-semibold text-[#14213D]">Zero credits on cache</p>
               <p className="text-xs sm:text-sm text-[#14213D]/75 mt-0.5">

@@ -28,7 +28,7 @@ export default function DesignPage() {
             <ArrowLeft className="w-4 h-4" />
             <span>Back to SignSafe Home</span>
           </Link>
-          <span className="text-xs font-mono uppercase tracking-widest text-[#14213D]/60">
+          <span className="text-xs font-mono uppercase tracking-widest text-[#14213D]/70">
             Design System Spec
           </span>
         </div>
@@ -38,7 +38,7 @@ export default function DesignPage() {
       <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-12 sm:space-y-16">
         <div>
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#14213D]/5 border border-[#14213D]/10 text-xs font-mono text-[#14213D]/70 mb-3">
-            <Sparkles className="w-3.5 h-3.5 text-[#E8A33D]" />
+            <Sparkles className="w-3.5 h-3.5 text-[#8A560B]" />
             SignSafe Visual Tokens
           </div>
           <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold text-[#14213D]">
@@ -57,7 +57,7 @@ export default function DesignPage() {
               <h2 className="font-serif text-xl sm:text-2xl font-bold text-[#14213D]">
                 1. NotarySeal Component
               </h2>
-              <p className="text-xs sm:text-sm text-[#14213D]/65">
+              <p className="text-xs sm:text-sm text-[#14213D]/70">
                 Embossed vector seal with 32 scalloped teeth, circular text path, and tactile press-in animation.
               </p>
             </div>
@@ -80,8 +80,8 @@ export default function DesignPage() {
                 replayKey={sealReplayKey}
               />
               <div className="text-xs">
-                <span className="font-semibold text-[#2FA36B]">Green (Looks fair)</span>
-                <p className="text-[#14213D]/60 font-mono text-[11px]">Score 75–100</p>
+                <span className="font-semibold text-[#1E734A]">Green (Looks fair)</span>
+                <p className="text-[#14213D]/70 font-mono text-[11px]">Score 75–100</p>
               </div>
             </div>
 
@@ -95,7 +95,7 @@ export default function DesignPage() {
               />
               <div className="text-xs">
                 <span className="font-semibold text-[#B87518]">Amber (Ask first)</span>
-                <p className="text-[#14213D]/60 font-mono text-[11px]">Score 40–74</p>
+                <p className="text-[#14213D]/70 font-mono text-[11px]">Score 40–74</p>
               </div>
             </div>
 
@@ -108,8 +108,8 @@ export default function DesignPage() {
                 replayKey={sealReplayKey}
               />
               <div className="text-xs">
-                <span className="font-semibold text-[#D64545]">Red (Don&apos;t sign yet)</span>
-                <p className="text-[#14213D]/60 font-mono text-[11px]">Score 0–39</p>
+                <span className="font-semibold text-[#A62626]">Red (Don&apos;t sign yet)</span>
+                <p className="text-[#14213D]/70 font-mono text-[11px]">Score 0–39</p>
               </div>
             </div>
           </div>
@@ -122,7 +122,7 @@ export default function DesignPage() {
               <h2 className="font-serif text-xl sm:text-2xl font-bold text-[#14213D]">
                 2. MarkerHighlight Component
               </h2>
-              <p className="text-xs sm:text-sm text-[#14213D]/65">
+              <p className="text-xs sm:text-sm text-[#14213D]/70">
                 Hand-drawn translucent marker band with responsive left-to-right sweep across contract clauses.
               </p>
             </div>
@@ -137,7 +137,7 @@ export default function DesignPage() {
 
           <div className="space-y-4 bg-[#FFFFFF]/60 p-6 sm:p-8 rounded-xl border border-[#14213D]/10">
             <p className="text-sm sm:text-base leading-relaxed">
-              <span className="font-mono text-xs text-[#14213D]/50 mr-2">[CLAUSE 8.2]</span>
+              <span className="font-mono text-xs text-[#14213D]/70 mr-2">[CLAUSE 8.2]</span>
               The Contractor agrees that{" "}
               <MarkerHighlight color="red" replayKey={highlightReplayKey}>
                 liability shall be uncapped, immediate, and fully indemnified without limitation
@@ -146,7 +146,7 @@ export default function DesignPage() {
             </p>
 
             <p className="text-sm sm:text-base leading-relaxed">
-              <span className="font-mono text-xs text-[#14213D]/50 mr-2">[CLAUSE 3.1]</span>
+              <span className="font-mono text-xs text-[#14213D]/70 mr-2">[CLAUSE 3.1]</span>
               Payments shall be issued within{" "}
               <MarkerHighlight color="amber" replayKey={highlightReplayKey}>
                 sixty (60) calendar days following month-end reconciliation
@@ -155,7 +155,7 @@ export default function DesignPage() {
             </p>
 
             <p className="text-sm sm:text-base leading-relaxed">
-              <span className="font-mono text-xs text-[#14213D]/50 mr-2">[CLAUSE 9.4]</span>
+              <span className="font-mono text-xs text-[#14213D]/70 mr-2">[CLAUSE 9.4]</span>
               The Company affirms that{" "}
               <MarkerHighlight color="green" replayKey={highlightReplayKey}>
                 it shall never request banking passwords, OTP credentials, or up-front disbursement fees
@@ -171,34 +171,34 @@ export default function DesignPage() {
             <h2 className="font-serif text-xl sm:text-2xl font-bold text-[#14213D]">
               3. CountUp Component
             </h2>
-            <p className="text-xs sm:text-sm text-[#14213D]/65">
+            <p className="text-xs sm:text-sm text-[#14213D]/70">
               Smooth, cubic-eased numerical animation for the Sign Score and credit telemetry counters.
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="paper-card p-5 text-center">
-              <span className="text-xs font-mono text-[#14213D]/60 uppercase">Sign Score</span>
-              <div className="font-serif text-4xl sm:text-5xl font-bold text-[#2FA36B] mt-1">
+              <span className="text-xs font-mono text-[#14213D]/70 uppercase">Sign Score</span>
+              <div className="font-serif text-4xl sm:text-5xl font-bold text-[#1E734A] mt-1">
                 <CountUp end={94} duration={1200} />
               </div>
-              <span className="text-xs text-[#2FA36B] font-medium">Safe margin</span>
+              <span className="text-xs text-[#1E734A] font-medium">Safe margin</span>
             </div>
 
             <div className="paper-card p-5 text-center">
-              <span className="text-xs font-mono text-[#14213D]/60 uppercase">Warning Flags</span>
-              <div className="font-serif text-4xl sm:text-5xl font-bold text-[#E8A33D] mt-1">
+              <span className="text-xs font-mono text-[#14213D]/70 uppercase">Warning Flags</span>
+              <div className="font-serif text-4xl sm:text-5xl font-bold text-[#8A560B] mt-1">
                 <CountUp end={3} duration={1000} />
               </div>
               <span className="text-xs text-[#B87518] font-medium">Points: 3 (Ask first)</span>
             </div>
 
             <div className="paper-card p-5 text-center">
-              <span className="text-xs font-mono text-[#14213D]/60 uppercase">Credits Charged</span>
+              <span className="text-xs font-mono text-[#14213D]/70 uppercase">Credits Charged</span>
               <div className="font-serif text-4xl sm:text-5xl font-bold text-[#14213D] mt-1">
                 <CountUp end={412} duration={1400} />
               </div>
-              <span className="text-xs text-[#14213D]/60 font-medium">3 steps cached (0 credits)</span>
+              <span className="text-xs text-[#14213D]/70 font-medium">3 steps cached (0 credits)</span>
             </div>
           </div>
         </section>
@@ -209,7 +209,7 @@ export default function DesignPage() {
             <h2 className="font-serif text-xl sm:text-2xl font-bold text-[#14213D]">
               4. Paper Cards & States
             </h2>
-            <p className="text-xs sm:text-sm text-[#14213D]/65">
+            <p className="text-xs sm:text-sm text-[#14213D]/70">
               Multi-device tactile document cards with subtle 1px hairline borders and layered elevation.
             </p>
           </div>
@@ -227,7 +227,7 @@ export default function DesignPage() {
                 They rush you to pay an onboarding fee before your first day.
                 Confirmed by you in adaptive question 1.
               </p>
-              <div className="mt-4 pt-3 border-t border-[#14213D]/10 text-xs font-mono text-[#D64545]">
+              <div className="mt-4 pt-3 border-t border-[#14213D]/10 text-xs font-mono text-[#A62626]">
                 Verify: Ask them to deduct fees from disbursements.
               </div>
             </PaperCard>
@@ -256,7 +256,7 @@ export default function DesignPage() {
             <h2 className="font-serif text-xl sm:text-2xl font-bold text-[#14213D]">
               5. Interactive Buttons & Controls
             </h2>
-            <p className="text-xs sm:text-sm text-[#14213D]/65">
+            <p className="text-xs sm:text-sm text-[#14213D]/70">
               Standardized touch targets designed to be accessible on phones, tablets, and desktop.
             </p>
           </div>
@@ -279,7 +279,7 @@ export default function DesignPage() {
       </main>
 
       {/* Footer */}
-      <footer className="w-full border-t border-[#14213D]/10 py-6 mt-12 bg-[#FBF8F1] text-center text-xs text-[#14213D]/60 font-mono">
+      <footer className="w-full border-t border-[#14213D]/10 py-6 mt-12 bg-[#FBF8F1] text-center text-xs text-[#14213D]/70 font-mono">
         SignSafe Design System • All components strictly respect prefers-reduced-motion
       </footer>
     </div>

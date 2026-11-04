@@ -950,77 +950,7 @@ Signed for the Client: Daniel Price, Creative Director`;
     }
   }, [audit, hasAutoCheckedPromises]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#FBF8F1] flex items-center justify-center p-6 text-[#14213D]">
-        <div className="text-sm font-medium flex items-center gap-2.5">
-          <RotateCw className="w-4 h-4 animate-spin text-[#E8A33D]" />
-          <span>Reading audit results from session...</span>
-        </div>
-      </div>
-    );
-  }
-
-  // Empty state if user opens /results with no prior scan
-  if (!audit || !audit.scoreResult) {
-    return (
-      <div className="min-h-screen bg-[#FBF8F1] flex flex-col justify-between selection:bg-[#E8A33D]/25 font-sans text-[#14213D]">
-        <header className="w-full border-b border-[#14213D]/10 bg-[#FBF8F1]/80 backdrop-blur-sm sticky top-0 z-40">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-[#14213D] hover:opacity-75 transition-opacity"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Back to Home</span>
-            </Link>
-            <span className="text-xs font-mono uppercase tracking-widest text-[#14213D]/60">
-              SignSafe Audit
-            </span>
-          </div>
-        </header>
-
-        <main className="flex-1 w-full max-w-2xl mx-auto px-4 sm:px-6 py-16 flex flex-col items-center justify-center text-center">
-          <div className="paper-card w-full p-8 sm:p-12 text-center space-y-6">
-            <div className="mx-auto w-16 h-16 rounded-full bg-[#E8A33D]/10 flex items-center justify-center text-[#E8A33D]">
-              <HelpCircle className="w-8 h-8" />
-            </div>
-            <h1 className="font-serif text-2xl sm:text-3xl font-bold text-[#14213D]">
-              No Document Audit in Session
-            </h1>
-            <p className="text-sm sm:text-base text-[#14213D]/75 max-w-md mx-auto leading-relaxed">
-              Upload a document on the home page to run a full multi-stage check, or inspect one of our recorded test runs below.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-              <Link
-                href="/"
-                className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#14213D] text-[#FBF8F1] text-sm font-semibold hover:bg-[#14213D]/90 transition"
-              >
-                Upload Document
-              </Link>
-              <button
-                onClick={() => loadDemoAudit("sample01")}
-                className="w-full sm:w-auto px-5 py-3 rounded-xl bg-white border border-[#14213D]/20 text-[#14213D] text-sm font-semibold hover:bg-stone-50 transition shadow-xs cursor-pointer"
-              >
-                Inspect Sample 01 (Job Offer)
-              </button>
-              <button
-                onClick={() => loadDemoAudit("sample02")}
-                className="w-full sm:w-auto px-5 py-3 rounded-xl bg-white border border-[#14213D]/20 text-[#14213D] text-sm font-semibold hover:bg-stone-50 transition shadow-xs cursor-pointer"
-              >
-                Inspect Sample 02 (Contract)
-              </button>
-            </div>
-          </div>
-        </main>
-
-        <footer className="w-full border-t border-[#14213D]/10 py-6 bg-[#FBF8F1] text-center text-xs text-[#14213D]/65">
-          SignSafe is not legal advice. It helps you spot things to ask about.
-        </footer>
-      </div>
-    );
-  }
-
+  const currentAudit: AuditData = audit ?? {};
   const {
     doc,
     cleanText = doc?.text || "",
@@ -1035,7 +965,7 @@ Signed for the Client: Daniel Price, Creative Director`;
     confirmedIds = [],
     scoreResult,
     totalCredits = 0,
-  } = audit;
+  } = currentAudit;
 
   const effectiveScoreResult: ScoreResult = React.useMemo(() => {
     if (!scoreResult) {
@@ -1110,12 +1040,83 @@ Signed for the Client: Daniel Price, Creative Director`;
   const documentClauses = React.useMemo(() => {
     return splitIntoClauses(cleanText || doc?.text || "");
   }, [cleanText, doc]);
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#FBF8F1] flex items-center justify-center p-6 text-[#14213D]">
+        <div className="text-sm font-medium flex items-center gap-2.5">
+          <RotateCw className="w-4 h-4 animate-spin text-[#8A560B]" />
+          <span>Reading audit results from session...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Empty state if user opens /results with no prior scan
+  if (!audit || !audit.scoreResult) {
+    return (
+      <div className="min-h-screen bg-[#FBF8F1] flex flex-col justify-between selection:bg-[#E8A33D]/25 font-sans text-[#14213D]">
+        <header className="w-full border-b border-[#14213D]/10 bg-[#FBF8F1]/80 backdrop-blur-sm sticky top-0 z-40">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-[#14213D] hover:opacity-75 transition-opacity"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back to Home</span>
+            </Link>
+            <span className="text-xs font-mono uppercase tracking-widest text-[#14213D]/70">
+              SignSafe Audit
+            </span>
+          </div>
+        </header>
+
+        <main className="flex-1 w-full max-w-2xl mx-auto px-4 sm:px-6 py-16 flex flex-col items-center justify-center text-center">
+          <div className="paper-card w-full p-8 sm:p-12 text-center space-y-6">
+            <div className="mx-auto w-16 h-16 rounded-full bg-[#E8A33D]/10 flex items-center justify-center text-[#8A560B]">
+              <HelpCircle className="w-8 h-8" />
+            </div>
+            <h1 className="font-serif text-2xl sm:text-3xl font-bold text-[#14213D]">
+              No Document Audit in Session
+            </h1>
+            <p className="text-sm sm:text-base text-[#14213D]/75 max-w-md mx-auto leading-relaxed">
+              Upload a document on the home page to run a full multi-stage check, or inspect one of our recorded test runs below.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+              <Link
+                href="/"
+                className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#14213D] text-[#FBF8F1] text-sm font-semibold hover:bg-[#14213D]/90 transition"
+              >
+                Upload Document
+              </Link>
+              <button
+                onClick={() => loadDemoAudit("sample01")}
+                className="w-full sm:w-auto px-5 py-3 rounded-xl bg-white border border-[#14213D]/20 text-[#14213D] text-sm font-semibold hover:bg-stone-50 transition shadow-xs cursor-pointer"
+              >
+                Inspect Sample 01 (Job Offer)
+              </button>
+              <button
+                onClick={() => loadDemoAudit("sample02")}
+                className="w-full sm:w-auto px-5 py-3 rounded-xl bg-white border border-[#14213D]/20 text-[#14213D] text-sm font-semibold hover:bg-stone-50 transition shadow-xs cursor-pointer"
+              >
+                Inspect Sample 02 (Contract)
+              </button>
+            </div>
+          </div>
+        </main>
+
+        <footer className="w-full border-t border-[#14213D]/10 py-6 bg-[#FBF8F1] text-center text-xs text-[#14213D]/70">
+          SignSafe is not legal advice. It helps you spot things to ask about.
+        </footer>
+      </div>
+    );
+  }
+
 
   // Render document with both red/amber quote highlights and navy Ask Anything highlights
   const renderDocumentWithClausesAndHighlights = () => {
     const textToRender = cleanText || doc?.text || "";
     if (!textToRender) {
-      return <div className="text-stone-400 italic">No text content available.</div>;
+      return <div className="text-stone-600 italic">No text content available.</div>;
     }
 
     if (documentClauses.length === 0) {
@@ -1160,11 +1161,11 @@ Signed for the Client: Daniel Price, Creative Director`;
                   : "bg-white/60 border border-stone-200/80 hover:bg-white"
               }`}
             >
-              <div className="flex items-center justify-between text-[11px] font-mono text-stone-500 pb-1.5 border-b border-stone-200/60 mb-2">
+              <div className="flex items-center justify-between text-[11px] font-mono text-stone-600 pb-1.5 border-b border-stone-200/60 mb-2">
                 <span className="font-bold text-[#14213D]/70">{clause.title}</span>
                 {isBrokenPromiseClause ? (
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#D64545] bg-[#D64545]/15 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
-                    <XCircle className="w-3 h-3 text-[#D64545]" />
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#A62626] bg-[#D64545]/15 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                    <XCircle className="w-3 h-3 text-[#A62626]" />
                     <span>Contradicts chat promise</span>
                   </span>
                 ) : isNavyHighlighted ? (
@@ -1246,8 +1247,8 @@ Signed for the Client: Daniel Price, Creative Director`;
               <ArrowLeft className="w-4 h-4 text-[#14213D]" />
               <span className="font-serif font-bold text-base sm:text-lg tracking-tight">SignSafe</span>
             </Link>
-            <span className="text-[#14213D]/30 hidden sm:inline">|</span>
-            <span className="text-xs font-mono text-stone-500 truncate max-w-[200px] sm:max-w-xs hidden sm:inline">
+            <span className="text-[#14213D]/70 hidden sm:inline">|</span>
+            <span className="text-xs font-mono text-stone-600 truncate max-w-[200px] sm:max-w-xs hidden sm:inline">
               {doc?.fileName || "Document Audit"}
             </span>
           </div>
@@ -1288,7 +1289,7 @@ Signed for the Client: Daniel Price, Creative Director`;
               animate={true}
               replayKey={sealKey}
             />
-            <div className="text-center font-mono text-[11px] uppercase tracking-wider text-stone-400">
+            <div className="text-center font-mono text-[11px] uppercase tracking-wider text-stone-600">
               Sign Score (0-100)
             </div>
           </div>
@@ -1296,7 +1297,7 @@ Signed for the Client: Daniel Price, Creative Director`;
           <div className="space-y-3 flex-1">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono font-semibold tracking-wide uppercase border">
               {effectiveScoreResult.color === "red" && (
-                <span className="text-[#D64545] bg-[#D64545]/10 border-[#D64545]/20">
+                <span className="text-[#A62626] bg-[#D64545]/10 border-[#D64545]/20">
                   {docTypeLabel} • HIGH RISK
                 </span>
               )}
@@ -1324,7 +1325,7 @@ Signed for the Client: Daniel Price, Creative Director`;
               <button
                 type="button"
                 onClick={() => setIsShareModalOpen(true)}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#2FA36B] hover:bg-[#258255] text-white text-xs sm:text-sm font-semibold transition shadow-sm cursor-pointer"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1E734A] hover:bg-[#15583B] text-white text-xs sm:text-sm font-semibold transition shadow-sm cursor-pointer"
               >
                 <Share2 className="w-4 h-4" />
                 <span>Share a fair-deal link with the other side</span>
@@ -1337,7 +1338,7 @@ Signed for the Client: Daniel Price, Creative Director`;
         {hasInjection && (
           <div className="paper-card rounded-2xl p-5 sm:p-6 bg-[#FEF2F2] border-2 border-[#D64545] shadow-sm space-y-3">
             <div className="flex items-start gap-3">
-              <ShieldAlert className="w-6 h-6 text-[#D64545] shrink-0 mt-0.5" />
+              <ShieldAlert className="w-6 h-6 text-[#A62626] shrink-0 mt-0.5" />
               <div className="space-y-1.5 flex-1">
                 <h3 className="font-serif text-lg font-bold text-[#991B1B]">
                   This document is trying to trick AI checkers.
@@ -1347,7 +1348,7 @@ Signed for the Client: Daniel Price, Creative Director`;
                 </p>
                 {quarantinedQuotes.length > 0 && (
                   <div className="mt-3 p-3 rounded-lg bg-white/90 border border-[#D64545]/25 font-mono text-xs text-[#991B1B] break-words space-y-1">
-                    <span className="text-[10px] font-bold uppercase tracking-wider block text-stone-500">
+                    <span className="text-[10px] font-bold uppercase tracking-wider block text-stone-600">
                       Quarantined Text:
                     </span>
                     {quarantinedQuotes.map((q, idx) => (
@@ -1366,7 +1367,7 @@ Signed for the Client: Daniel Price, Creative Director`;
         {inspectData?.hasMalicious && (
           <div className="paper-card rounded-2xl p-5 sm:p-6 bg-[#FEF2F2] border-l-4 border-[#D64545] border-t border-r border-b border-[#D64545]/20 shadow-sm space-y-2">
             <div className="flex items-start gap-3">
-              <FileCode className="w-6 h-6 text-[#D64545] shrink-0 mt-0.5" />
+              <FileCode className="w-6 h-6 text-[#A62626] shrink-0 mt-0.5" />
               <div className="space-y-1 flex-1">
                 <h3 className="font-serif text-lg font-bold text-[#991B1B]">
                   Hidden code or terminal commands found
@@ -1413,12 +1414,12 @@ Signed for the Client: Daniel Price, Creative Director`;
         <section className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-[#E8A33D]" />
+              <AlertTriangle className="w-5 h-5 text-[#8A560B]" />
               <h2 className="font-serif text-xl sm:text-2xl font-bold text-[#14213D]">
                 What to watch for
               </h2>
             </div>
-            <span className="text-xs font-mono uppercase tracking-wider text-stone-500">
+            <span className="text-xs font-mono uppercase tracking-wider text-stone-600">
               Top Priority Warning Signs
             </span>
           </div>
@@ -1462,7 +1463,7 @@ Signed for the Client: Daniel Price, Creative Director`;
                         <span
                           className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold font-mono ${
                             isRed
-                              ? "bg-[#D64545]/15 text-[#D64545]"
+                              ? "bg-[#D64545]/15 text-[#A62626]"
                               : "bg-[#E8A33D]/20 text-[#B87518]"
                           }`}
                         >
@@ -1475,7 +1476,7 @@ Signed for the Client: Daniel Price, Creative Director`;
 
                       <div className="flex items-center gap-2">
                         {isConfirmed && (
-                          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#D64545]/10 text-[#D64545] border border-[#D64545]/20 inline-flex items-center gap-1">
+                          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#D64545]/10 text-[#A62626] border border-[#D64545]/20 inline-flex items-center gap-1">
                             <span>✓</span>
                             <span>Confirmed by you</span>
                           </span>
@@ -1500,10 +1501,10 @@ Signed for the Client: Daniel Price, Creative Director`;
                     {/* Exact Quote with MarkerHighlight & Jump Indicator */}
                     {quoteText && (
                       <div className="space-y-1.5 pt-1">
-                        <div className="flex items-center justify-between text-[11px] font-mono uppercase tracking-wider text-stone-500 font-semibold">
+                        <div className="flex items-center justify-between text-[11px] font-mono uppercase tracking-wider text-stone-600 font-semibold">
                           <span>Exact Document Quote:</span>
-                          <span className="inline-flex items-center gap-1 text-[#14213D] hover:text-[#E8A33D] font-sans lowercase text-xs">
-                            <ArrowDownCircle className="w-3.5 h-3.5 text-[#E8A33D]" />
+                          <span className="inline-flex items-center gap-1 text-[#14213D] hover:text-[#8A560B] font-sans lowercase text-xs">
+                            <ArrowDownCircle className="w-3.5 h-3.5 text-[#8A560B]" />
                             <span>jump to line</span>
                           </span>
                         </div>
@@ -1519,12 +1520,12 @@ Signed for the Client: Daniel Price, Creative Director`;
                     {whyExplanation && (
                       <div className="space-y-1 pt-1">
                         <div className="flex items-center justify-between">
-                          <span className="text-[11px] font-mono uppercase tracking-wider text-stone-500 font-semibold">
+                          <span className="text-[11px] font-mono uppercase tracking-wider text-stone-600 font-semibold">
                             Plain Explanation:
                           </span>
                           {isVerified ? (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#2FA36B]/10 text-[#1E734A] border border-[#2FA36B]/25">
-                              <Check className="w-3 h-3 text-[#2FA36B]" />
+                              <Check className="w-3 h-3 text-[#1E734A]" />
                               <span>Checked against your document ✓</span>
                             </span>
                           ) : (
@@ -1553,7 +1554,7 @@ Signed for the Client: Daniel Price, Creative Director`;
                             onClick={() => copyText(askMessage, `ask-${idx}`)}
                             className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-white hover:bg-stone-50 border border-stone-300 text-xs font-semibold text-[#14213D] transition shadow-2xs cursor-pointer"
                           >
-                            <Copy className="w-3 h-3 text-stone-500" />
+                            <Copy className="w-3 h-3 text-stone-600" />
                             <span>{copiedId === `ask-${idx}` ? "Copied ✓" : "Copy"}</span>
                           </button>
                         </div>
@@ -1566,7 +1567,7 @@ Signed for the Client: Daniel Price, Creative Director`;
                     {/* Merged Evidence Items */}
                     {signal.evidenceTitles && signal.evidenceTitles.length > 1 && (
                       <div className="p-3 rounded-xl bg-stone-50 border border-stone-200/70 space-y-1.5">
-                        <span className="text-[11px] font-mono uppercase tracking-wider text-stone-500 font-semibold block">
+                        <span className="text-[11px] font-mono uppercase tracking-wider text-stone-600 font-semibold block">
                           Evidence noted in document ({signal.evidenceTitles.length} tells merged):
                         </span>
                         <ul className="text-xs text-stone-700 space-y-1 list-disc list-inside">
@@ -1582,7 +1583,7 @@ Signed for the Client: Daniel Price, Creative Director`;
                     {/* What to check yourself in bold action */}
                     <div className="pt-1">
                       <div className="p-3 sm:p-3.5 rounded-xl bg-white border border-[#14213D]/12 space-y-0.5">
-                        <span className="text-[11px] font-mono uppercase tracking-wider text-stone-500 font-semibold block">
+                        <span className="text-[11px] font-mono uppercase tracking-wider text-stone-600 font-semibold block">
                           What to check yourself:
                         </span>
                         <p className="text-xs sm:text-sm font-semibold text-[#14213D] leading-snug">
@@ -1609,9 +1610,9 @@ Signed for the Client: Daniel Price, Creative Director`;
                     : `See all ${mergedSignals.length} things we noticed (${remainingSignals.length} more)`}
                 </span>
                 {showAllSignals ? (
-                  <ChevronUp className="w-4 h-4 text-stone-500" />
+                  <ChevronUp className="w-4 h-4 text-stone-600" />
                 ) : (
-                  <ChevronDown className="w-4 h-4 text-stone-500" />
+                  <ChevronDown className="w-4 h-4 text-stone-600" />
                 )}
               </button>
 
@@ -1641,7 +1642,7 @@ Signed for the Client: Daniel Price, Creative Director`;
                             </h4>
                           </div>
                           {isConfirmed && (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#D64545]/10 text-[#D64545]">
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#D64545]/10 text-[#A62626]">
                               Confirmed
                             </span>
                           )}
@@ -1652,7 +1653,7 @@ Signed for the Client: Daniel Price, Creative Director`;
                         </p>
 
                         <div className="p-3 rounded-lg bg-[#FAF7F0] border border-[#14213D]/10">
-                          <span className="text-[10px] font-mono uppercase tracking-wider text-stone-500 font-semibold block mb-0.5">
+                          <span className="text-[10px] font-mono uppercase tracking-wider text-stone-600 font-semibold block mb-0.5">
                             Action:
                           </span>
                           <p className="text-xs sm:text-sm font-semibold text-[#14213D]">
@@ -1685,7 +1686,7 @@ Signed for the Client: Daniel Price, Creative Director`;
                 const def = SIGNALS_MAP[gId];
                 return (
                   <li key={gIdx} className="flex items-start gap-2.5 text-xs sm:text-sm text-[#1E734A]">
-                    <CheckCircle2 className="w-4 h-4 text-[#2FA36B] shrink-0 mt-0.5" />
+                    <CheckCircle2 className="w-4 h-4 text-[#1E734A] shrink-0 mt-0.5" />
                     <span>{def?.title || gId}</span>
                   </li>
                 );
@@ -1699,7 +1700,7 @@ Signed for the Client: Daniel Price, Creative Director`;
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#14213D]/10 pb-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <Scale className="w-5 h-5 text-[#E8A33D]" />
+                <Scale className="w-5 h-5 text-[#8A560B]" />
                 <h3 className="font-serif text-xl sm:text-2xl font-bold text-[#14213D]">
                   A Fairer Version That Checks Itself
                 </h3>
@@ -1717,12 +1718,12 @@ Signed for the Client: Daniel Price, Creative Director`;
               >
                 {loadingFair ? (
                   <>
-                    <RotateCw className="w-4 h-4 animate-spin text-[#E8A33D]" />
+                    <RotateCw className="w-4 h-4 animate-spin text-[#8A560B]" />
                     <span>Writing fair terms...</span>
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-4 h-4 text-[#E8A33D]" />
+                    <Sparkles className="w-4 h-4 text-[#8A560B]" />
                     <span>Write a fairer version</span>
                   </>
                 )}
@@ -1737,7 +1738,7 @@ Signed for the Client: Daniel Price, Creative Director`;
                 <div className="flex items-center gap-2">
                   {fairResult.allFactsKept ? (
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#2FA36B]/15 text-[#1E734A] border border-[#2FA36B]/30">
-                      <Check className="w-4 h-4 text-[#2FA36B]" />
+                      <Check className="w-4 h-4 text-[#1E734A]" />
                       <span>Keeps the agreed facts ✓</span>
                     </span>
                   ) : (
@@ -1773,7 +1774,7 @@ Signed for the Client: Daniel Price, Creative Director`;
                     }}
                     className="px-3.5 py-1.5 rounded-lg bg-[#14213D] text-[#FBF8F1] text-xs font-semibold hover:bg-[#14213D]/90 transition shadow-2xs inline-flex items-center gap-1.5 cursor-pointer"
                   >
-                    <Copy className="w-3.5 h-3.5 text-[#E8A33D]" />
+                    <Copy className="w-3.5 h-3.5 text-[#8A560B]" />
                     <span>{copiedId === "all-fair" ? "Copied Fair Version ✓" : "Copy fair version"}</span>
                   </button>
 
@@ -1831,7 +1832,7 @@ Signed for the Client: Daniel Price, Creative Director`;
         <section className="paper-card rounded-2xl p-6 sm:p-8 bg-white border border-[#14213D]/12 shadow-md space-y-5">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <MessageSquare className="w-5 h-5 text-[#E8A33D]" />
+              <MessageSquare className="w-5 h-5 text-[#8A560B]" />
               <h3 className="font-serif text-xl sm:text-2xl font-bold text-[#14213D]">
                 Ask anything about this document
               </h3>
@@ -1857,7 +1858,7 @@ Signed for the Client: Daniel Price, Creative Director`;
                   placeholder="e.g. When do I get paid? Who owns my work?"
                   className="w-full px-4 py-3 rounded-xl border border-stone-300 focus:border-[#14213D] focus:ring-2 focus:ring-[#14213D]/15 bg-white text-sm text-[#14213D] outline-none transition"
                 />
-                <span className="absolute right-3 top-3 text-[10px] font-mono text-stone-400">
+                <span className="absolute right-3 top-3 text-[10px] font-mono text-stone-600">
                   {askQuery.length}/500
                 </span>
               </div>
@@ -1869,12 +1870,12 @@ Signed for the Client: Daniel Price, Creative Director`;
               >
                 {askLoading ? (
                   <>
-                    <RotateCw className="w-4 h-4 animate-spin text-[#E8A33D]" />
+                    <RotateCw className="w-4 h-4 animate-spin text-[#8A560B]" />
                     <span>Searching...</span>
                   </>
                 ) : (
                   <>
-                    <Search className="w-4 h-4 text-[#E8A33D]" />
+                    <Search className="w-4 h-4 text-[#8A560B]" />
                     <span>Ask</span>
                   </>
                 )}
@@ -1883,7 +1884,7 @@ Signed for the Client: Daniel Price, Creative Director`;
 
             {/* Dynamic Suggestion Chips */}
             <div className="flex items-center flex-wrap gap-2 pt-1">
-              <span className="text-[11px] font-mono uppercase tracking-wider text-stone-500 font-semibold mr-1">
+              <span className="text-[11px] font-mono uppercase tracking-wider text-stone-600 font-semibold mr-1">
                 Suggestions:
               </span>
               {getSuggestionChips().map((chip, idx) => (
@@ -1913,7 +1914,7 @@ Signed for the Client: Daniel Price, Creative Director`;
                   {askResult.verdict === "supported" &&
                   !askResult.answer.toLowerCase().includes("doesn't say") ? (
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#2FA36B]/15 text-[#1E734A] border border-[#2FA36B]/30">
-                      <Check className="w-3.5 h-3.5 text-[#2FA36B]" />
+                      <Check className="w-3.5 h-3.5 text-[#1E734A]" />
                       <span>Checked against your document ✓</span>
                     </span>
                   ) : askResult.answer.toLowerCase().includes("doesn't say") ? (
@@ -1933,7 +1934,7 @@ Signed for the Client: Daniel Price, Creative Director`;
               </p>
 
               {navyHighlightIds.length > 0 && (
-                <div className="text-xs text-stone-500 pt-1 flex items-center gap-1.5 font-mono">
+                <div className="text-xs text-stone-600 pt-1 flex items-center gap-1.5 font-mono">
                   <span className="w-2 h-2 rounded-full bg-[#14213D]" />
                   <span>
                     Highlighted in navy marker below in the document view.
@@ -1949,7 +1950,7 @@ Signed for the Client: Daniel Price, Creative Director`;
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-[#14213D]/10 pb-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <MessagesSquare className="w-5 h-5 text-[#E8A33D]" />
+                <MessagesSquare className="w-5 h-5 text-[#8A560B]" />
                 <h3 className="font-serif text-xl sm:text-2xl font-bold text-[#14213D]">
                   Promise vs paper
                 </h3>
@@ -1970,7 +1971,7 @@ Signed for the Client: Daniel Price, Creative Director`;
           {promiseInjectionWarning && (
             <div className="paper-card rounded-2xl p-5 bg-[#FEF2F2] border-2 border-[#D64545] shadow-sm space-y-2 animate-fadeIn">
               <div className="flex items-start gap-3">
-                <ShieldAlert className="w-6 h-6 text-[#D64545] shrink-0 mt-0.5" />
+                <ShieldAlert className="w-6 h-6 text-[#A62626] shrink-0 mt-0.5" />
                 <div className="space-y-1">
                   <h4 className="font-serif text-base font-bold text-[#991B1B]">
                     This screenshot is trying to trick AI checkers.
@@ -2014,12 +2015,12 @@ Signed for the Client: Daniel Price, Creative Director`;
           {promisesTab === "screenshot" && (
             <div className="space-y-4">
               <div className="p-6 rounded-2xl border-2 border-dashed border-[#14213D]/20 bg-[#FAF7F0]/60 hover:bg-[#FAF7F0] transition flex flex-col items-center justify-center text-center space-y-3">
-                <Upload className="w-8 h-8 text-[#14213D]/40" />
+                <Upload className="w-8 h-8 text-[#14213D]/70" />
                 <div className="space-y-1">
                   <p className="text-xs sm:text-sm font-semibold text-[#14213D]">
                     Add chat or email screenshots (up to 4)
                   </p>
-                  <p className="text-[11px] text-stone-500">
+                  <p className="text-[11px] text-stone-600">
                     PNG, JPG, or WebP. Automatically shrunk to max 1600px long side (max 2.3 MB total).
                   </p>
                 </div>
@@ -2099,7 +2100,7 @@ Signed for the Client: Daniel Price, Creative Director`;
           {promisesTab === "paste" && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-mono uppercase tracking-wider text-stone-500 font-semibold">
+                <label className="text-xs font-mono uppercase tracking-wider text-stone-600 font-semibold">
                   Pasted Chat or Email Text:
                 </label>
                 <button
@@ -2114,7 +2115,7 @@ Signed for the Client: Daniel Price, Creative Director`;
                       console.error(e);
                     }
                   }}
-                  className="text-xs text-[#14213D] font-semibold hover:text-[#E8A33D] underline cursor-pointer"
+                  className="text-xs text-[#14213D] font-semibold hover:text-[#8A560B] underline cursor-pointer"
                 >
                   Load sample chat text
                 </button>
@@ -2131,7 +2132,7 @@ Signed for the Client: Daniel Price, Creative Director`;
           )}
 
           {imageError && (
-            <p className="text-xs text-[#D64545] font-semibold animate-fadeIn">{imageError}</p>
+            <p className="text-xs text-[#A62626] font-semibold animate-fadeIn">{imageError}</p>
           )}
 
           {/* Action Trigger */}
@@ -2146,12 +2147,12 @@ Signed for the Client: Daniel Price, Creative Director`;
             >
               {checkingPromises ? (
                 <>
-                  <RotateCw className="w-4 h-4 animate-spin text-[#E8A33D]" />
+                  <RotateCw className="w-4 h-4 animate-spin text-[#8A560B]" />
                   <span>Checking promises against contract...</span>
                 </>
               ) : (
                 <>
-                  <Scale className="w-4 h-4 text-[#E8A33D]" />
+                  <Scale className="w-4 h-4 text-[#8A560B]" />
                   <span>Compare promises to contract</span>
                 </>
               )}
@@ -2172,7 +2173,7 @@ Signed for the Client: Daniel Price, Creative Director`;
                       {promiseItems.filter((i) => i.status === "kept").length} Kept
                     </span>
                     {promiseBrokenCount > 0 && (
-                      <span className="text-[#D64545] font-semibold ml-2">
+                      <span className="text-[#A62626] font-semibold ml-2">
                         • {promiseBrokenCount} Broken (+1 amber point in Sign Score)
                       </span>
                     )}
@@ -2206,9 +2207,9 @@ Signed for the Client: Daniel Price, Creative Director`;
                       {/* Status header */}
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex items-start gap-2.5">
-                          {isKept && <CheckCircle2 className="w-5 h-5 text-[#2FA36B] shrink-0 mt-0.5" />}
-                          {isBroken && <XCircle className="w-5 h-5 text-[#D64545] shrink-0 mt-0.5" />}
-                          {isNotInContract && <HelpCircle className="w-5 h-5 text-stone-400 shrink-0 mt-0.5" />}
+                          {isKept && <CheckCircle2 className="w-5 h-5 text-[#1E734A] shrink-0 mt-0.5" />}
+                          {isBroken && <XCircle className="w-5 h-5 text-[#A62626] shrink-0 mt-0.5" />}
+                          {isNotInContract && <HelpCircle className="w-5 h-5 text-stone-600 shrink-0 mt-0.5" />}
 
                           <div className="space-y-0.5">
                             <span
@@ -2255,7 +2256,7 @@ Signed for the Client: Daniel Price, Creative Director`;
                       {isBroken && (
                         <div className="p-3 rounded-lg bg-white border border-[#D64545]/30 text-xs text-stone-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
                           <div className="space-y-1">
-                            <span className="font-mono text-[10px] uppercase font-bold text-[#D64545] block">
+                            <span className="font-mono text-[10px] uppercase font-bold text-[#A62626] block">
                               Contract contradiction:
                             </span>
                             <mark className="bg-[#D64545]/20 text-[#991B1B] font-mono px-2 py-0.5 rounded font-semibold text-xs leading-relaxed inline-block">
@@ -2268,7 +2269,7 @@ Signed for the Client: Daniel Price, Creative Director`;
                                 item.contractQuote || "Invoices are payable within 60 days of receipt."
                               )
                             }
-                            className="shrink-0 px-3 py-1.5 rounded-lg bg-[#D64545] hover:bg-[#D64545]/90 text-white text-xs font-semibold shadow-2xs transition cursor-pointer self-start sm:self-auto"
+                            className="shrink-0 px-3 py-1.5 rounded-lg bg-[#A62626] hover:bg-[#861E1E] text-white text-xs font-semibold shadow-2xs transition cursor-pointer self-start sm:self-auto"
                           >
                             Show in document
                           </button>
@@ -2279,7 +2280,7 @@ Signed for the Client: Daniel Price, Creative Director`;
                       {isNotInContract && (
                         <div className="p-3 rounded-lg bg-[#FAF7F0] border border-stone-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                           <div className="space-y-0.5 flex-1">
-                            <span className="font-mono text-[10px] uppercase font-bold text-stone-500 block">
+                            <span className="font-mono text-[10px] uppercase font-bold text-stone-600 block">
                               Suggested request to other side:
                             </span>
                             <p className="text-xs text-stone-700 italic">
@@ -2296,7 +2297,7 @@ Signed for the Client: Daniel Price, Creative Director`;
                             }}
                             className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-stone-300 hover:bg-stone-50 text-xs font-semibold text-[#14213D] shadow-2xs transition cursor-pointer self-start sm:self-auto"
                           >
-                            <Copy className="w-3.5 h-3.5 text-stone-500" />
+                            <Copy className="w-3.5 h-3.5 text-stone-600" />
                             <span>{copiedPromiseIndex === idx ? "Copied Message ✓" : "Copy message"}</span>
                           </button>
                         </div>
@@ -2319,11 +2320,11 @@ Signed for the Client: Daniel Price, Creative Director`;
               <h3 className="font-serif text-lg sm:text-xl font-bold text-[#14213D]">
                 Full Document View
               </h3>
-              <p className="text-xs text-stone-500">
+              <p className="text-xs text-stone-600">
                 Click any warning card above to jump directly to its highlighted clause below.
               </p>
             </div>
-            <span className="text-xs font-mono text-stone-500">
+            <span className="text-xs font-mono text-stone-600">
               {documentClauses.length} clauses • {cleanText.length} characters
             </span>
           </div>
@@ -2340,13 +2341,13 @@ Signed for the Client: Daniel Price, Creative Director`;
             className="w-full py-4 px-6 rounded-2xl bg-white border border-[#14213D]/15 hover:bg-stone-50 text-xs sm:text-sm font-semibold text-[#14213D] flex items-center justify-between transition shadow-xs cursor-pointer"
           >
             <div className="flex items-center gap-2">
-              <FileText className="w-4 h-4 text-stone-500" />
+              <FileText className="w-4 h-4 text-stone-600" />
               <span>Details &amp; Technical Breakdown (scoring maths, facts, and signals)</span>
             </div>
             {showDetails ? (
-              <ChevronUp className="w-4 h-4 text-stone-500" />
+              <ChevronUp className="w-4 h-4 text-stone-600" />
             ) : (
-              <ChevronDown className="w-4 h-4 text-stone-500" />
+              <ChevronDown className="w-4 h-4 text-stone-600" />
             )}
           </button>
 
@@ -2358,7 +2359,7 @@ Signed for the Client: Daniel Price, Creative Director`;
                   <h4 className="font-serif text-base sm:text-lg font-bold text-[#14213D]">
                     Scoring Maths
                   </h4>
-                  <span className="text-xs font-mono text-stone-500">
+                  <span className="text-xs font-mono text-stone-600">
                     Transparent rule calculation
                   </span>
                 </div>
@@ -2370,7 +2371,7 @@ Signed for the Client: Daniel Price, Creative Director`;
                       className="flex items-center justify-between p-2 rounded bg-stone-50 border border-stone-200"
                     >
                       <span className="text-stone-700">{item.reason}</span>
-                      <span className="font-bold text-[#D64545]">+{item.points} pts</span>
+                      <span className="font-bold text-[#A62626]">+{item.points} pts</span>
                     </div>
                   ))}
 
@@ -2394,7 +2395,7 @@ Signed for the Client: Daniel Price, Creative Director`;
                   <h4 className="font-serif text-base sm:text-lg font-bold text-[#14213D]">
                     All Signals &amp; Clocked Probabilities
                   </h4>
-                  <span className="text-xs font-mono text-stone-500">
+                  <span className="text-xs font-mono text-stone-600">
                     Raw Decide endpoint model outputs
                   </span>
                 </div>
@@ -2402,7 +2403,7 @@ Signed for the Client: Daniel Price, Creative Director`;
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs font-mono">
                     <thead>
-                      <tr className="border-b border-stone-200 text-stone-500">
+                      <tr className="border-b border-stone-200 text-stone-600">
                         <th className="py-2 pr-3">Signal ID</th>
                         <th className="py-2 pr-3">Title</th>
                         <th className="py-2 pr-3">Model Confidence</th>
@@ -2459,7 +2460,7 @@ Signed for the Client: Daniel Price, Creative Director`;
                     <h4 className="font-serif text-base sm:text-lg font-bold text-[#14213D]">
                       Extracted Document Facts
                     </h4>
-                    <span className="text-xs font-mono text-stone-500">
+                    <span className="text-xs font-mono text-stone-600">
                       Verbatim values pulled from text
                     </span>
                   </div>
@@ -2480,12 +2481,12 @@ Signed for the Client: Daniel Price, Creative Director`;
                           key={fieldName}
                           className="p-2.5 rounded-lg bg-stone-50 border border-stone-200 space-y-0.5"
                         >
-                          <span className="font-mono uppercase text-[10px] text-stone-500 font-semibold block">
+                          <span className="font-mono uppercase text-[10px] text-stone-600 font-semibold block">
                             {fieldName.replace(/_/g, " ")}
                           </span>
                           <span
                             className={`block truncate ${
-                              isNotStated ? "text-stone-400 italic" : "text-stone-800 font-medium"
+                              isNotStated ? "text-stone-600 italic" : "text-stone-800 font-medium"
                             }`}
                           >
                             {displayVal}
@@ -2504,7 +2505,7 @@ Signed for the Client: Daniel Price, Creative Director`;
                     Credits Charged Per Step
                   </h4>
                   <div className="flex items-center gap-3 text-xs font-mono">
-                    <span className="font-semibold text-[#2FA36B]">
+                    <span className="font-semibold text-[#1E734A]">
                       Saved by cache: {cachedStepsCount} steps
                     </span>
                     <span className="font-bold text-[#14213D]">
@@ -2516,7 +2517,7 @@ Signed for the Client: Daniel Price, Creative Director`;
                 <div className="overflow-x-auto text-xs font-mono">
                   <table className="w-full text-left">
                     <thead>
-                      <tr className="border-b border-stone-200 text-stone-500">
+                      <tr className="border-b border-stone-200 text-stone-600">
                         <th className="py-1.5">Inspection Step</th>
                         <th className="py-1.5">Clocked Endpoint</th>
                         <th className="py-1.5 text-right">Credits Charged</th>
@@ -2588,7 +2589,7 @@ Signed for the Client: Daniel Price, Creative Director`;
               onClick={() => window.print()}
               className="w-full sm:w-auto px-5 py-3 rounded-xl bg-white border border-[#14213D]/20 text-xs sm:text-sm font-semibold text-[#14213D] hover:bg-stone-50 transition shadow-xs inline-flex items-center justify-center gap-2 cursor-pointer"
             >
-              <Printer className="w-4 h-4 text-stone-500" />
+              <Printer className="w-4 h-4 text-stone-600" />
               <span>Print or Save PDF</span>
             </button>
           </div>
@@ -2597,7 +2598,7 @@ Signed for the Client: Daniel Price, Creative Director`;
 
       {/* FOOTER */}
       <footer className="w-full border-t border-[#14213D]/10 py-6 sm:py-8 bg-[#FBF8F1] mt-12 print:hidden">
-        <div className="max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left text-xs sm:text-sm text-[#14213D]/65">
+        <div className="max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left text-xs sm:text-sm text-[#14213D]/70">
           <p>SignSafe is not legal advice. It helps you spot things to ask about.</p>
           <div className="flex items-center gap-4 font-mono text-xs">
             <button

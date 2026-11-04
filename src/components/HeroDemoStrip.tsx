@@ -74,14 +74,14 @@ export default function HeroDemoStrip() {
               Live Document Scan Preview
             </span>
           </div>
-          <span className="text-[11px] text-[#14213D]/50 hidden sm:inline">
+          <span className="text-[11px] text-[#14213D]/70 hidden sm:inline">
             Sample: Remote Employment Offer § 4.2
           </span>
         </div>
 
         {/* Contract Clause Content */}
         <div className="p-5 sm:p-7 space-y-4 font-sans text-sm sm:text-[16px] text-[#14213D]/90 leading-relaxed relative">
-          <div className="text-xs font-mono font-semibold uppercase tracking-wider text-[#14213D]/50">
+          <div className="text-xs font-mono font-semibold uppercase tracking-wider text-[#14213D]/70">
             Section 4.2 — Onboarding & Workstation Hardware
           </div>
 
@@ -131,11 +131,11 @@ export default function HeroDemoStrip() {
               </div>
 
               <div className="flex items-center gap-2 self-end sm:self-auto text-xs font-semibold">
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-[#E8A33D] text-white shadow-xs">
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-[#E8A33D] text-[#14213D] shadow-xs">
                   <Check className="w-3.5 h-3.5 stroke-[2.5]" />
                   Yes, upfront
                 </span>
-                <span className="px-2.5 py-1 rounded bg-stone-200/60 text-stone-500 line-through">
+                <span className="px-2.5 py-1 rounded bg-stone-200/60 text-stone-600 line-through">
                   No
                 </span>
               </div>
@@ -179,7 +179,7 @@ export default function HeroDemoStrip() {
         </div>
 
         {/* Footer Loop Indicator */}
-        <div className="bg-[#F8F5EE]/60 border-t border-[#14213D]/5 px-4 py-1.5 flex items-center justify-between text-[11px] text-[#14213D]/50 font-mono">
+        <div className="bg-[#F8F5EE]/60 border-t border-[#14213D]/5 px-4 py-1.5 flex items-center justify-between text-[11px] text-[#14213D]/70 font-mono">
           <span>Automated scan • 1 highlighted risk</span>
           <div className="flex items-center gap-1.5">
             <span

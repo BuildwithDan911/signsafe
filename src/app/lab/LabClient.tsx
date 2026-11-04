@@ -238,12 +238,12 @@ export default function LabClient() {
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-stone-500 mb-1 font-mono">{test.endpoint}</p>
+                  <p className="text-xs text-stone-600 mb-1 font-mono">{test.endpoint}</p>
                   <p className="text-xs text-stone-600 line-clamp-2">{test.description}</p>
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-stone-100 flex items-center justify-between">
-                  <div className="text-xs text-stone-500">
+                  <div className="text-xs text-stone-600">
                     {res ? (
                       <span>
                         <strong className="text-stone-800">{res.meta.credits}</strong> cr ·{" "}
@@ -277,7 +277,7 @@ export default function LabClient() {
                 Response Inspector {activeTestTitle && `— ${activeTestTitle}`}
               </h2>
               {activeJson?.meta && (
-                <div className="text-xs text-stone-500">
+                <div className="text-xs text-stone-600">
                   Credits:{" "}
                   <strong className="text-stone-800">{activeJson.meta.credits}</strong> |
                   Time: {activeJson.meta.modelMs} ms
@@ -299,7 +299,7 @@ export default function LabClient() {
             <div className="flex-1 overflow-auto">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="border-b border-stone-200 text-stone-500">
+                  <tr className="border-b border-stone-200 text-stone-600">
                     <th className="py-2 pr-2">Test</th>
                     <th className="py-2 px-2">Verdict / Output</th>
                     <th className="py-2 px-2 text-right">Credits</th>
@@ -341,7 +341,7 @@ export default function LabClient() {
                         <td className="py-2 px-2 text-right font-mono text-stone-700">
                           {r ? r.meta.credits : "—"}
                         </td>
-                        <td className="py-2 pl-2 text-right text-stone-500 font-mono">
+                        <td className="py-2 pl-2 text-right text-stone-600 font-mono">
                           {r ? `${r.meta.modelMs}ms` : "—"}
                         </td>
                       </tr>
@@ -357,19 +357,19 @@ export default function LabClient() {
         <footer className="bg-stone-900 text-stone-200 rounded-xl p-4 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs">
           <div className="flex items-center gap-6">
             <div>
-              <span className="text-stone-400">Lab Session Credits:</span>{" "}
+              <span className="text-stone-600">Lab Session Credits:</span>{" "}
               <strong className="text-white text-sm">{totalSessionCredits}</strong>
             </div>
             <div>
-              <span className="text-stone-400">Total Credits Used Today:</span>{" "}
+              <span className="text-stone-600">Total Credits Used Today:</span>{" "}
               <strong className="text-white text-sm">{creditsToday}</strong>
             </div>
             <div>
-              <span className="text-stone-400">Daily Cap:</span>{" "}
+              <span className="text-stone-600">Daily Cap:</span>{" "}
               <span className="text-stone-300">3,000</span>
             </div>
           </div>
-          <div className="text-stone-400">
+          <div className="text-stone-600">
             SignSafe Clocked Client: <span className="text-emerald-400 font-medium">Active (Plain Fetch)</span>
           </div>
         </footer>

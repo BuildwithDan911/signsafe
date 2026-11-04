@@ -68,6 +68,8 @@ export default function MarkerHighlight({
     <span
       ref={containerRef}
       key={replayKey}
+      role="mark"
+      aria-label={typeof children === "string" ? `Highlighted text: ${children}` : `Highlighted ${color} text`}
       className={`relative inline-block font-medium ${className}`}
     >
       <span

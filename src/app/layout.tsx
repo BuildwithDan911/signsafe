@@ -13,7 +13,16 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
+const deploymentHost =
+  process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL;
+const metadataBase = new URL(
+  deploymentHost
+    ? `https://${deploymentHost}`
+    : "http://localhost:3000"
+);
+
 export const metadata: Metadata = {
+  metadataBase,
   title: "SignSafe — Check it before you sign it",
   description:
     "Find the traps, ask the right questions, and get a fair version before you sign. Powered by Clocked.",
