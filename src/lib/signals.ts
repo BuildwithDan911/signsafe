@@ -258,13 +258,13 @@ export const MERGE_GROUPS: GroupDef[] = [
   },
   {
     key: "one_sided_terms",
-    matchIds: ["RF3.6", "RF3.13", "RF3.4", "RF3.3", "RF3.14", "RF3.1"],
-    title: "Unlimited liability or one-sided terms",
-    meaning: "One-sided liability, unilateral contract amendment rights, or perpetual rights without mutual protection.",
-    severity: "red",
-    verifyYourself: "Insist that liability is mutual and capped at the total fee value of the contract.",
-    askUser: "Does the contract make you liable for all losses without limit or allow them to alter terms unilaterally?",
-    ifYes: "Real case: one-sided liability clauses can expose contractors to catastrophic uncapped damages.",
+    matchIds: ["RF3.13"],
+    title: "One-sided liability",
+    meaning: "The agreement places responsibility for losses on one side without comparable responsibility for the other.",
+    severity: "amber",
+    verifyYourself: "Check whether each party is responsible for its own actions and whether any liability cap is mutual.",
+    askUser: "Does this clause make you responsible for losses the other party caused, or leave them free of responsibility?",
+    ifYes: "A one-sided allocation can leave one party carrying costs caused by the other.",
   },
 ];
 
