@@ -26,17 +26,17 @@ export default function HeroDemoStrip() {
     let timer: NodeJS.Timeout;
 
     const runSequence = () => {
-      // Step 0 -> Step 1: Sweep highlight after 1.4s
+      // Step 0 -> Step 1: Begin the highlight quickly so the demo feels responsive.
       timer = setTimeout(() => {
         if (!isMounted) return;
         setStage(1);
 
-        // Step 1 -> Step 2: Slide in question card after 1.2s
+        // Step 1 -> Step 2: Bring in the question without shifting the buttons.
         timer = setTimeout(() => {
           if (!isMounted) return;
           setStage(2);
 
-          // Step 2 -> Step 3: Stamp seal after 1.4s
+          // Step 2 -> Step 3: Finish the reveal promptly.
           timer = setTimeout(() => {
             if (!isMounted) return;
             setStage(3);
@@ -47,9 +47,9 @@ export default function HeroDemoStrip() {
               setStage(0);
               runSequence();
             }, 4500);
-          }, 1400);
-        }, 1200);
-      }, 1400);
+          }, 850);
+        }, 650);
+      }, 450);
     };
 
     runSequence();
@@ -109,10 +109,11 @@ export default function HeroDemoStrip() {
 
           {/* Slide-in Follow-up Question Card */}
           <div
-            className={`transition-all duration-500 ease-out ${
+            aria-hidden={stage < 2 && !prefersReducedMotion}
+            className={`min-h-[112px] sm:min-h-[88px] mt-4 transition-all duration-500 ease-out ${
               stage >= 2 || prefersReducedMotion
-                ? "opacity-100 translate-y-0 max-h-40 mt-4"
-                : "opacity-0 translate-y-3 max-h-0 overflow-hidden pointer-events-none mt-0"
+                ? "opacity-100 translate-y-0"
+                : "opacity-0 translate-y-3 pointer-events-none"
             }`}
           >
             <div className="bg-[#FAF7F0] border border-[#E8A33D]/40 rounded-lg p-3 sm:p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -144,13 +145,14 @@ export default function HeroDemoStrip() {
 
           {/* Seal Stamp & Verdict Notice */}
           <div
-            className={`transition-all duration-600 ease-out ${
+            aria-hidden={stage < 3 && !prefersReducedMotion}
+            className={`min-h-[104px] sm:min-h-[88px] border-t border-[#14213D]/10 pt-4 transition-all duration-600 ease-out ${
               stage >= 3 || prefersReducedMotion
-                ? "opacity-100 scale-100 max-h-48 pt-2"
-                : "opacity-0 scale-95 max-h-0 overflow-hidden pointer-events-none"
+                ? "opacity-100 scale-100"
+                : "opacity-0 scale-95 pointer-events-none"
             }`}
           >
-            <div className="border-t border-[#14213D]/10 pt-4 flex items-center justify-between gap-4">
+            <div className="flex items-center justify-between gap-4">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <span className="inline-flex items-center gap-1 text-xs font-mono font-bold uppercase tracking-wider text-[#B87518] bg-[#E8A33D]/15 px-2 py-0.5 rounded">
