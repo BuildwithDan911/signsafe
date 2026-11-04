@@ -1,5 +1,9 @@
 import { MergedSignal } from "./signals";
 
+export function clampSignScore(score: number): number {
+  return Math.max(26, Math.min(94, Math.round(score)));
+}
+
 export interface ScoreInput {
   mergedSignals: MergedSignal[];
   guardInjection?: boolean;
@@ -147,7 +151,7 @@ export function calculateScore(input: ScoreInput): ScoreResult {
   }
 
   return {
-    signScore,
+    signScore: clampSignScore(signScore),
     color,
     label,
     headline,
@@ -194,7 +198,7 @@ export function computeScore(input: {
       signScore = Math.max(0, Math.min(39, rawScore));
     }
     return {
-      signScore,
+      signScore: clampSignScore(signScore),
       color,
       label,
       headline,
