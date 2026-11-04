@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
         format: "text",
         max_tokens: 45,
         description:
-          `Ask one short, plain yes/no question (maximum 18 words) about a concrete fact the signer would know from their own experience, tied to the clause for ${title}: ${meaning}. Do not ask the signer to interpret legal wording, do not repeat generic risk language, and do not assume a fact. If the document gives no specific clause to clarify, return an empty string. Return only the question.`,
+          `The checker found a possible concern in this document: ${title} — ${meaning}. ${contextLabel} Ask one short, plain yes/no question (maximum 18 words) about a concrete fact the signer would know from their own experience, tied to the exact clause. Ask the detail that decides whether the term is ordinary or concerning in this deal. Do not ask the signer to interpret legal wording, do not repeat generic risk language, and do not assume a fact. If no useful real-life clarification can be grounded in the clause, return an empty string. Return only the question.`,
       };
     });
 
