@@ -516,7 +516,7 @@ export default function ScanPage() {
               flags: signalsToFill.slice(0, 8),
               clarificationFlags: [...new Set([
                 ...(data.lowConfidenceIds || []),
-                ...(data.highConfidenceIds || []).filter((id: string) => SIGNALS_MAP[id]?.askUser),
+                ...(data.highConfidenceIds || []),
               ])]
                 .slice(0, 3)
                 .map((id: string) => {
