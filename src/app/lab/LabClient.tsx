@@ -80,7 +80,7 @@ const TESTS: TestItem[] = [
 
 interface TestResult {
   testId: number;
-  data: unknown;
+  data: any;
   meta: {
     credits: number;
     modelMs: number;

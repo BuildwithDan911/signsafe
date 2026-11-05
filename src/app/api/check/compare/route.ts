@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
     let totalCredits = 0;
     let allCached = true;
     let meaningUnavailable = false;
-    let compareRes: { data: CompareApiResponse; meta: unknown } | null = null;
+    let compareRes: { data: CompareApiResponse; meta: { credits?: number; cached?: boolean } | null } | null = null;
 
     // 2. Call Clocked Compare API
     try {

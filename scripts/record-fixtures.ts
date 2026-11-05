@@ -20,7 +20,7 @@ if (fs.existsSync(".env.local")) {
 
 const BASE_URL = process.env.SIGN_SAFE_URL || "http://localhost:3000";
 
-async function postJson(endpoint: string, body: unknown): Promise<unknown> {
+async function postJson(endpoint: string, body: unknown): Promise<any> {
   const res = await fetch(`${BASE_URL}${endpoint}`, {
     method: "POST",
     headers: {
@@ -38,7 +38,7 @@ async function postJson(endpoint: string, body: unknown): Promise<unknown> {
   return res.json();
 }
 
-async function postFormData(endpoint: string, formData: FormData): Promise<unknown> {
+async function postFormData(endpoint: string, formData: FormData): Promise<any> {
   const res = await fetch(`${BASE_URL}${endpoint}`, {
     method: "POST",
     headers: {

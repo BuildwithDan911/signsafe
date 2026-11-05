@@ -133,7 +133,7 @@ export async function POST(req: NextRequest) {
           fixes.push({
             id: `flag_fix_${idx + 1}`,
             title: scrubEntityValues(f.title || `Clarification ${idx + 1}`, entities),
-            beforeClause: scrubEntityValues(f.meaning || f.title, entities),
+            beforeClause: scrubEntityValues((f.meaning || f.title || ""), entities),
             afterClause: scrubEntityValues(f.verifyYourself || f.askThem || "Clarify this term in writing.", entities),
             flagIds: f.id ? [f.id] : [],
             youAccepted: false,
@@ -145,9 +145,9 @@ export async function POST(req: NextRequest) {
     }
 
     // Clean score breakdown
-    const scrubbedBreakdown = (scoreResult.breakdown || []).map((b: { reason?: string; points?: number }) => ({
-      reason: scrubEntityValues(b.reason, entities),
-      points: b.points,
+    const scrubbedBreakdown = (scoreResult.breakdown || []).map((b: { reason?: string | null; points?: number | null }) => ({
+      reason: scrubEntityValues(b.reason || "", entities),
+      points: b.points ?? 0,
     }));
 
     const initialPoints = scoreResult.totalPoints ?? (scoreResult.color === "red" ? 4 : scoreResult.color === "amber" ? 1 : 0);

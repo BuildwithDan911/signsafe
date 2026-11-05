@@ -98,7 +98,7 @@ interface AuditData {
     fields?: Record<string, { value: unknown; offsets?: unknown }>;
   };
   decideData?: {
-    answers?: unknown;
+    answers?: any;
     greenSignals?: string[];
     docType?: string;
     highConfidenceIds?: string[];
