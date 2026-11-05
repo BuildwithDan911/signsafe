@@ -187,7 +187,7 @@ export async function POST(req: NextRequest) {
 
     const items: PromiseItem[] = (
       returnedClaims.length > 0 ? returnedClaims : claims.map((c) => ({ claim: c }))
-    ).map((c: { claim?: string; verdict?: string; supported?: number; contradicted?: number; not_stated?: number }, idx: number) => {
+    ).map((c: any, idx: number) => {
       const claimText = c.claim || claims[idx] || "";
       const verdict = c.verdict;
       const sup = c.supported ?? 0;
@@ -232,9 +232,9 @@ export async function POST(req: NextRequest) {
         promise: claimText,
         status,
         contractQuote: quote,
-        evidenceStart: c.evidence?.start,
-        evidenceEnd: c.evidence?.end,
-        confidence: c.evidence?.confidence,
+        evidenceStart: (c as { evidence?: { start?: number; end?: number; confidence?: number } })?.evidence?.start,
+        evidenceEnd: (c as { evidence?: { start?: number; end?: number; confidence?: number } })?.evidence?.end,
+        confidence: (c as { evidence?: { start?: number; end?: number; confidence?: number } })?.evidence?.confidence,
       };
     });
 
