@@ -11,6 +11,9 @@ import {
 } from "../src/server/share";
 import { computeScore } from "../src/lib/score";
 
+// Test-only share secret; production must set SHARE_SECRET via env (no fallback).
+process.env.SHARE_SECRET = "test-share-secret-for-testing-only-do-not-use-in-production";
+
 describe("Phase 11: Fair-deal share link, decision record & live rescore", () => {
   describe("1. HMAC-SHA256 Role Tokens & Security", () => {
     const shareId = generateShareId();

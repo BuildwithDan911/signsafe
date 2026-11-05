@@ -60,7 +60,11 @@ export function getRescoreStatus(usedClockedDecide: boolean): {
  * Gets or falls back to the share secret.
  */
 function getSecret(): string {
-  return process.env.SHARE_SECRET || "signsafe-default-share-secret-key-32chars";
+  const secret = process.env.SHARE_SECRET;
+  if (!secret) {
+    throw new Error("SHARE_SECRET is required. Set it before deploying share links.");
+  }
+  return secret;
 }
 
 /**

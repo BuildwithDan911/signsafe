@@ -3,6 +3,7 @@ import { callClocked, ClockedResponse } from "@/server/clocked";
 import signalsData from "@/data/signals.json";
 import { SignalDef, SIGNALS_MAP } from "@/lib/signals";
 import { formatApiError } from "@/server/errors";
+import { checkRateLimit } from "@/server/store";
 import { splitForClocked, sumChunkCredits } from "@/lib/chunking";
 
 export const maxDuration = 60;
@@ -26,6 +27,25 @@ interface ClarificationFlagInput {
 
 export async function POST(req: NextRequest) {
   try {
+    const forwarded = req.headers.get("x-forwarded-for");
+    const ip = (
+      forwarded
+        ? forwarded.split(",")[0].trim()
+        : req.headers.get("x-real-ip") || "127.0.0.1"
+    ).trim();
+    const rl = await checkRateLimit(ip);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        {
+          error:
+            "Rate limit reached: at most 5 live checks per hour. You can view Judge Mode to explore recorded runs.",
+          code: 429,
+          resetSeconds: rl.resetSeconds,
+        },
+        { status: 429 }
+      );
+    }
+
     const body = await req.json();
     const { cleanText = "", flags = [], clarificationFlags = [] } = body as {
       cleanText?: string;
