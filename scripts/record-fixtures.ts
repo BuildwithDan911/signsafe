@@ -20,7 +20,7 @@ if (fs.existsSync(".env.local")) {
 
 const BASE_URL = process.env.SIGN_SAFE_URL || "http://localhost:3000";
 
-async function postJson(endpoint: string, body: any): Promise<any> {
+async function postJson(endpoint: string, body: unknown): Promise<unknown> {
   const res = await fetch(`${BASE_URL}${endpoint}`, {
     method: "POST",
     headers: {
@@ -38,7 +38,7 @@ async function postJson(endpoint: string, body: any): Promise<any> {
   return res.json();
 }
 
-async function postFormData(endpoint: string, formData: FormData): Promise<any> {
+async function postFormData(endpoint: string, formData: FormData): Promise<unknown> {
   const res = await fetch(`${BASE_URL}${endpoint}`, {
     method: "POST",
     headers: {
@@ -125,8 +125,8 @@ async function main() {
 
   console.log(" -> Generating fair version (/api/check/fair)...");
   const quotesToFair1 = (fillRes1.items || [])
-    .filter((it: any) => it.quote)
-    .map((it: any) => ({ id: it.flagId, title: it.title, quote: it.quote }));
+    .filter((it: { quote?: string }) => it.quote)
+    .map((it: { quote?: string; flagId?: string; title?: string }) => ({ id: it.flagId, title: it.title, quote: it.quote }));
   const fairRes1 = await postJson("/api/check/fair", {
     quotes: quotesToFair1,
     facts: extractRes1.fields || {},
@@ -239,8 +239,8 @@ async function main() {
 
   console.log(" -> Generating fair version (/api/check/fair)...");
   const quotesToFair2 = (fillRes2.items || [])
-    .filter((it: any) => it.quote)
-    .map((it: any) => ({ id: it.flagId, title: it.title, quote: it.quote }));
+    .filter((it: { quote?: string }) => it.quote)
+    .map((it: { quote?: string; flagId?: string; title?: string }) => ({ id: it.flagId, title: it.title, quote: it.quote }));
   const fairRes2 = await postJson("/api/check/fair", {
     quotes: quotesToFair2,
     facts: extractRes2.fields || {},

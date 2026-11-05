@@ -74,8 +74,8 @@ export default function HomePage() {
         setCompareV2Name(file.name);
       }
       showToast(`Loaded ${file.name} for Version ${version}`);
-    } catch (err: any) {
-      showToast(err.message || `Failed to read Version ${version} file`);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : `Failed to read Version ${version} file`);
     } finally {
       setIsProcessing(false);
       setProcessingStatus("");
@@ -107,8 +107,8 @@ export default function HomePage() {
         setCompareV2Name(url);
       }
       showToast(`Fetched Version ${version} text from URL`);
-    } catch (err: any) {
-      showToast(err.message || `Failed to fetch Version ${version} link`);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : `Failed to fetch Version ${version} link`);
     } finally {
       setIsProcessing(false);
       setProcessingStatus("");

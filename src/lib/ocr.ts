@@ -66,11 +66,12 @@ export async function runClientOcr(
     const ret = await worker.recognize(imageDataUrl);
     await worker.terminate();
     return ret.data.text || "";
-  } catch (err: any) {
+  } catch (err) {
     try {
       await worker.terminate();
     } catch {}
-    throw new Error(`OCR failed: ${err.message}`);
+    const message = err instanceof Error ? err.message : String(err);
+    throw new Error(`OCR failed: ${message}`);
   }
 }
 

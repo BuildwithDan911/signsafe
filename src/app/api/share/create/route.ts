@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
     const fixes: ProposedFix[] = [];
 
     if (Array.isArray(fairClauses) && fairClauses.length > 0) {
-      fairClauses.forEach((fc: any, idx: number) => {
+      fairClauses.forEach((fc: { originalQuote?: string; fairClause?: string; title?: string; id?: string; flagId?: string }, idx: number) => {
         if (fc.originalQuote || fc.fairClause) {
           fixes.push({
             id: fc.id || `fix_${idx + 1}`,
@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
     // If no fixes were explicitly passed from fairClauses, construct fixes from broken promises or known flags
     if (fixes.length === 0) {
       if (Array.isArray(brokenPromises) && brokenPromises.length > 0) {
-        brokenPromises.forEach((bp: any, idx: number) => {
+        brokenPromises.forEach((bp: { promise?: string; contractQuote?: string }, idx: number) => {
           fixes.push({
             id: `promise_fix_${idx + 1}`,
             title: scrubEntityValues(`Sync promise: "${bp.promise || "Invoice terms"}"`, entities),
@@ -129,7 +129,7 @@ export async function POST(req: NextRequest) {
 
       // If still empty, check if flags have any quote
       if (fixes.length === 0 && Array.isArray(flags)) {
-        flags.slice(0, 3).forEach((f: any, idx: number) => {
+        flags.slice(0, 3).forEach((f: { title?: string; meaning?: string; askThem?: string; verifyYourself?: string; id?: string }, idx: number) => {
           fixes.push({
             id: `flag_fix_${idx + 1}`,
             title: scrubEntityValues(f.title || `Clarification ${idx + 1}`, entities),
@@ -145,7 +145,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Clean score breakdown
-    const scrubbedBreakdown = (scoreResult.breakdown || []).map((b: any) => ({
+    const scrubbedBreakdown = (scoreResult.breakdown || []).map((b: { reason?: string; points?: number }) => ({
       reason: scrubEntityValues(b.reason, entities),
       points: b.points,
     }));
@@ -169,9 +169,9 @@ export async function POST(req: NextRequest) {
         totalPoints: initialPoints,
         breakdown: scrubbedBreakdown,
       },
-      checksRun: (checksRun || []).map((c: any) => ({
-        step: c.step,
-        name: scrubEntityValues(c.name, entities),
+      checksRun: (checksRun || []).map((c: { step?: string; name?: string; credits?: number; cached?: boolean }) => ({
+        step: c.step || "",
+        name: scrubEntityValues(c.name || "", entities),
         credits: c.credits || 0,
         cached: !!c.cached,
       })),
@@ -203,7 +203,7 @@ export async function POST(req: NextRequest) {
       expiresAt,
       docHash,
     });
-  } catch (err: any) {
+  } catch (err) {
     return formatApiError(err).response;
   }
 }

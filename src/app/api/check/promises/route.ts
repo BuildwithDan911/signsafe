@@ -151,7 +151,7 @@ export async function POST(req: NextRequest) {
 
     if (Array.isArray(rawPromises)) {
       extractedPromises = rawPromises
-        .map((p: any) => (typeof p === "string" ? p : p?.value || p?.text || ""))
+        .map((p: { value?: string; text?: string }) => (typeof p === "string" ? p : p?.value || p?.text || ""))
         .map((s: string) => s.trim())
         .filter((s: string) => s.length > 0);
     } else if (typeof rawPromises === "string" && rawPromises.trim()) {
@@ -183,11 +183,11 @@ export async function POST(req: NextRequest) {
     totalCredits += groundRes.meta.credits;
     totalModelMs += groundRes.meta.modelMs;
 
-    const returnedClaims: any[] = groundRes.data?.claims || [];
+    const returnedClaims: unknown[] = groundRes.data?.claims || [];
 
     const items: PromiseItem[] = (
       returnedClaims.length > 0 ? returnedClaims : claims.map((c) => ({ claim: c }))
-    ).map((c: any, idx: number) => {
+    ).map((c: { claim?: string; verdict?: string; supported?: number; contradicted?: number; not_stated?: number }, idx: number) => {
       const claimText = c.claim || claims[idx] || "";
       const verdict = c.verdict;
       const sup = c.supported ?? 0;
@@ -250,7 +250,7 @@ export async function POST(req: NextRequest) {
         cached: fillRes.meta.cached && groundRes.meta.cached,
       },
     });
-  } catch (err: any) {
+  } catch (err) {
     console.error("Promise vs paper error:", err);
     return formatApiError(err).response;
   }

@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
       success: true,
       newCount: result.newCount,
     });
-  } catch (err: any) {
+  } catch (err) {
     return formatApiError(err).response;
   }
 }

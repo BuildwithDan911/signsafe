@@ -210,7 +210,7 @@ export async function POST(req: NextRequest) {
           (groundingRes.meta?.modelMs || 0),
       },
     });
-  } catch (err: any) {
+  } catch (err) {
     return formatApiError(err).response;
   }
 }

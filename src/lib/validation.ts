@@ -60,6 +60,11 @@ export const ReadJsonSchema = z.object({
   photoBase64: z.string().optional(),
 });
 
+export const CompareSchema = z.object({
+  text1: z.string().min(1, "text1 is required"),
+  text2: z.string().min(1, "text2 is required"),
+});
+
 export const GuardSchema = z.object({
   text: z.string().min(1, "text is required"),
   pdfBase64: z.string().optional(),

@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Execute requested test
-    let result: any = null;
+    let result: unknown = null;
 
     switch (testId) {
       case 1: {
@@ -276,10 +276,11 @@ export async function POST(req: NextRequest) {
     }
 
     const creditsToday = await getDailyCreditsUsed();
-    return NextResponse.json({ ...result, creditsToday });
-  } catch (err: any) {
+    return NextResponse.json({ ...(result as Record<string, unknown>), creditsToday });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
     return NextResponse.json(
-      { error: err.message || "An unexpected error occurred" },
+      { error: message || "An unexpected error occurred" },
       { status: 500 }
     );
   }

@@ -37,9 +37,9 @@ export async function POST(req: NextRequest) {
     const { cleanText = "", facts = {}, fileSignals = [], emails = [], dealContext } = validation.data;
 
     // 1. Build State string
-    const factLines = Object.entries(facts)
-      .filter(([_, v]: any) => v && v.value !== null && v.value !== undefined)
-      .map(([k, v]: any) => `${k}: ${Array.isArray(v.value) ? v.value.join(", ") : v.value}`)
+    const factLines = Object.entries(facts as Record<string, { value: unknown }>)
+      .filter(([_, v]) => v && v.value !== null && v.value !== undefined)
+      .map(([k, v]) => `${k}: ${Array.isArray(v.value) ? v.value.join(", ") : v.value}`)
       .join("\n");
 
     const fileCheckLines: string[] = [];
@@ -48,10 +48,10 @@ export async function POST(req: NextRequest) {
         fileCheckLines.push(`${fs.id}: ${fs.note}`);
       }
     }
-    const freeWebmails = emails.filter((e: any) => e.isFreeWebmail);
+    const freeWebmails = emails.filter((e: { isFreeWebmail: boolean }) => e.isFreeWebmail);
     if (freeWebmails.length > 0) {
       fileCheckLines.push(
-        `SI1: Free webmail sender (${freeWebmails.map((e: any) => e.email).join(", ")})`
+        `SI1: Free webmail sender (${freeWebmails.map((e: { email: string }) => e.email).join(", ")})`
       );
     }
 
@@ -133,7 +133,7 @@ export async function POST(req: NextRequest) {
     }
 
     const questionKeys = ["contract_terms", "authenticity_tells", "green_signals"] as const;
-    const answers: Record<string, any> = {};
+    const answers: Record<string, unknown> = {};
     for (const key of questionKeys) {
       const parts = requests.map((request) => request.data.answers?.[key]).filter(Boolean);
       const probabilities: Record<string, number> = {};
@@ -147,7 +147,7 @@ export async function POST(req: NextRequest) {
       answers[key] = { ...(parts[0] || {}), selected: [...selected], probabilities };
     }
     const docTypeParts = requests.map((request) => request.data.answers?.doc_type).filter(Boolean);
-    answers.doc_type = docTypeParts.find((answer: any) => (answer.confidence || 0) >= 0.5) || docTypeParts[0] || {};
+    answers.doc_type = docTypeParts.find((answer: { confidence?: number }) => (answer.confidence || 0) >= 0.5) || docTypeParts[0] || {};
 
     // 4. Apply strict confidence thresholds (RED_FLAGS: 0.70, GIVEAWAYS: 0.85, GREEN: 0.50)
     const filtered = filterDecideByThreshold(answers);
@@ -156,7 +156,7 @@ export async function POST(req: NextRequest) {
     const merged = mergeSignals(filtered.highConfidenceIds, filtered.probabilities);
 
     // If local file signals or free-webmail exists, ensure they are represented
-    if (fileSignals.some((fs: any) => fs.id === "FM1") && !filtered.highConfidenceIds.includes("FM1")) {
+    if (fileSignals.some((fs: { id: string }) => fs.id === "FM1") && !filtered.highConfidenceIds.includes("FM1")) {
       filtered.highConfidenceIds.push("FM1");
     }
     if (freeWebmails.length > 0 && !filtered.highConfidenceIds.includes("SI1")) {
@@ -175,12 +175,12 @@ export async function POST(req: NextRequest) {
       lowConfidenceIds: filtered.lowConfidenceIds,
       mergedSignals: finalMergedSignals,
       greenSignals: filtered.greenIds,
-      docType: answers.doc_type?.selected || answers.doc_type?.choice || dealContext?.dealType || "other",
+      docType: (answers.doc_type as { selected?: string; choice?: string } | undefined)?.selected || (answers.doc_type as { selected?: string; choice?: string } | undefined)?.choice || dealContext?.dealType || "other",
       contextSkipped: !dealContext || Boolean(dealContext.skipped),
       sectionsChecked: chunks.length,
       meta: chunks.length > 1 ? sumChunkCredits(requests) : requests[0].meta,
     });
-  } catch (err: any) {
+  } catch (err) {
     return formatApiError(err).response;
   }
 }

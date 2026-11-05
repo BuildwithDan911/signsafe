@@ -39,11 +39,12 @@ export async function fetchAndParseLink(initialUrl: string): Promise<LinkParseRe
           Accept: "application/pdf, text/html, text/plain;q=0.9, */*;q=0.1",
         },
       });
-    } catch (err: any) {
-      if (err.name === "AbortError") {
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") {
         throw new Error("This link can't be checked: Connection timed out (8s limit)");
       }
-      throw new Error(`This link can't be checked: ${err.message}`);
+      const message = err instanceof Error ? err.message : String(err);
+      throw new Error(`This link can't be checked: ${message}`);
     } finally {
       clearTimeout(timeout);
     }

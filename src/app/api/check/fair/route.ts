@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { callClocked } from "@/server/clocked";
+import { callClocked, ClockedResponse } from "@/server/clocked";
 import { formatApiError } from "@/server/errors";
 import { checkRateLimit } from "@/server/store";
 import { validateBody, FairSchema } from "@/lib/validation";
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 1. Build Fill fields to rewrite clauses (one generate field per quote, max 400 tokens)
-    const fillFields: Record<string, any> = {};
+    const fillFields: Record<string, unknown> = {};
 
     targetQuotes.forEach((q, idx) => {
       fillFields[`fair_${idx}`] = {
@@ -118,7 +118,7 @@ export async function POST(req: NextRequest) {
 
     let allFactsKept = true;
     const unsupportedFacts: string[] = [];
-    let groundingRes: any = null;
+    let groundingRes: ClockedResponse | null = null;
 
     if (factClaims.length > 0 && rewrittenJoined.length > 10) {
       try {

@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
     const sortedClarificationFlags: ClarificationFlagInput[] = [...clarificationFlags]
       .sort((a, b) => (b.weight ?? 0) - (a.weight ?? 0))
       .slice(0, 3);
-    const fields: Record<string, any> = {};
+    const fields: Record<string, unknown> = {};
 
     sortedFlags.forEach((flag, i) => {
       const def = SIGNALS_MAP[flag.id] as SignalDef | undefined;

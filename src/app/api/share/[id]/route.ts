@@ -40,7 +40,7 @@ export async function GET(req: NextRequest, { params }: RouteProps) {
       share,
       currentRole: role,
     });
-  } catch (err: any) {
+  } catch (err) {
     return formatApiError(err).response;
   }
 }
@@ -179,7 +179,7 @@ export async function PATCH(req: NextRequest, { params }: RouteProps) {
       share,
       currentRole: role,
     });
-  } catch (err: any) {
+  } catch (err) {
     return formatApiError(err).response;
   }
 }

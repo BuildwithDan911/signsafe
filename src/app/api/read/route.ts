@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
-import { SignDoc, FileSignalItem, SourceType } from "@/lib/types";
+import { SignDoc, FileSignalItem, SourceType, ScriptItem, HiddenTextItem, DocMetadata } from "@/lib/types";
 import { parseDocx } from "@/server/docx";
 import { parsePdf } from "@/server/pdf";
 import { findCommandLines, findEmails, findHiddenInText } from "@/server/inspectors";
@@ -18,9 +18,9 @@ export async function POST(req: NextRequest) {
     let fileName = "pasted-document.txt";
     let sourceType: SourceType = "paste";
     let fileSignals: FileSignalItem[] = [];
-    let scripts: any[] = [];
-    let metadata: any = {};
-    let hiddenText: any[] = [];
+    let scripts: ScriptItem[] = [];
+    let metadata: DocMetadata = {};
+    let hiddenText: HiddenTextItem[] = [];
     let pdfBase64: string | undefined = undefined;
     let pdfPageCount: number | undefined = undefined;
 
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
       text = rawText;
       hiddenText = findHiddenInText(text);
 
-      if (body.photoBase64) {
+      if (validation.data.photoBase64) {
         // Optional photo base64
       }
     } else {
@@ -178,9 +178,10 @@ export async function POST(req: NextRequest) {
     };
 
     return NextResponse.json({ signDoc });
-  } catch (err: any) {
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
     return NextResponse.json(
-      { error: err.message || "Failed to parse document" },
+      { error: message || "Failed to parse document" },
       { status: 500 }
     );
   }

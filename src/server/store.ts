@@ -64,7 +64,7 @@ export async function storeGet<T>(key: string): Promise<T | null> {
 
 export async function storeSet(
   key: string,
-  value: any,
+  value: unknown,
   ttlSeconds: number = 2592000 // default 30 days
 ): Promise<void> {
   if (redisClient) {

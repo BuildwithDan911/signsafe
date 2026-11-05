@@ -24,14 +24,14 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const results: any[] = [];
+    const results: Array<{ origin: string; code: string; verdict: string; malicious: boolean; suspicious: boolean; category?: unknown; severity?: unknown; evidence: unknown[]; sectionsChecked: number }> = [];
     let totalCredits = 0;
     let totalModelMs = 0;
     let allCached = true;
 
     for (const item of scripts) {
       const chunks = splitForClocked(item.code || "");
-      const scriptResults = [];
+      const scriptResults: Array<{ data: { verdict: string; malicious?: boolean; suspicious?: boolean; category?: unknown; severity?: unknown; evidence?: unknown[] } }> = [];
       for (const chunk of chunks) {
         const res = await callClocked("script", { script: chunk.text, evidence: true });
         scriptResults.push(res);
