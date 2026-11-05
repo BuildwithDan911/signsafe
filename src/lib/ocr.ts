@@ -79,11 +79,7 @@ export async function runPdfOcr(
   file: File,
   onProgress?: (percent: number, status: string) => void
 ): Promise<{ text: string; pageCount: number }> {
-  const pdfjs = await import("pdfjs-dist");
-  pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-    "pdfjs-dist/build/pdf.worker.min.js",
-    import.meta.url
-  ).toString();
+  const pdfjs = await import("pdfjs-dist/webpack.mjs");
   const pdf = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
   if (pdf.numPages > 4) {
     const pageCount = pdf.numPages;
