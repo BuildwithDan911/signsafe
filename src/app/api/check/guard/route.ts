@@ -3,6 +3,7 @@ import { callClocked } from "@/server/clocked";
 import { checkRateLimit } from "@/server/store";
 import { formatApiError } from "@/server/errors";
 import { splitForClocked, sumChunkCredits } from "@/lib/chunking";
+import { validateBody, GuardSchema } from "@/lib/validation";
 
 export const maxDuration = 60;
 
@@ -83,7 +84,9 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { text, pdfBase64, pdfPageCount, sourceType } = body;
+    const validation = validateBody(GuardSchema, body);
+    if ("error" in validation) return validation.error;
+    const { text, pdfBase64, pdfPageCount, sourceType } = validation.data;
 
     if (sourceType === "pdf" && Number(pdfPageCount) > 4) {
       return NextResponse.json(

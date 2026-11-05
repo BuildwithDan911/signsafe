@@ -5,6 +5,7 @@ import { SignalDef, SIGNALS_MAP } from "@/lib/signals";
 import { formatApiError } from "@/server/errors";
 import { checkRateLimit } from "@/server/store";
 import { splitForClocked, sumChunkCredits } from "@/lib/chunking";
+import { validateBody, FillSchema } from "@/lib/validation";
 
 export const maxDuration = 60;
 
@@ -47,12 +48,12 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { cleanText = "", flags = [], clarificationFlags = [] } = body as {
-      cleanText?: string;
-      flags?: FlagInput[];
-      clarificationFlags?: ClarificationFlagInput[];
-    };
-    const dealContext = body.dealContext || {};
+    const validation = validateBody(FillSchema, body);
+    if ("error" in validation) return validation.error;
+    const cleanText: string = validation.data.cleanText ?? "";
+    const flags: FlagInput[] = (validation.data.flags ?? []) as FlagInput[];
+    const clarificationFlags: ClarificationFlagInput[] = (validation.data.clarificationFlags ?? []) as ClarificationFlagInput[];
+    const dealContext = validation.data.dealContext || {};
     const contextLabel = dealContext.skipped
       ? `No extra user-side context was supplied. The document is classified as ${dealContext.dealType || "a contract"}; avoid assuming which side benefits.`
       : `Context: user is ${dealContext.role || "a party"} in a ${dealContext.dealType || "contract"}; what is happening: ${dealContext.transaction || "unspecified"}; relationship: ${dealContext.relationship || "unspecified"}. Explain why this term matters to this user in one plain sentence.`;

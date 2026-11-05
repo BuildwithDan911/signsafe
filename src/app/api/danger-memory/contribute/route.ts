@@ -3,6 +3,7 @@ import { contributeDangerPattern } from "@/server/dangerMemory";
 import { scrubEntityValues } from "@/server/share";
 import { formatApiError } from "@/server/errors";
 import { checkRateLimit } from "@/server/store";
+import { validateBody, DangerMemoryContributeSchema } from "@/lib/validation";
 
 export const maxDuration = 60;
 
@@ -28,13 +29,15 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
+    const validation = validateBody(DangerMemoryContributeSchema, body);
+    if ("error" in validation) return validation.error;
     const {
       redactedSnippet = "",
       cleanText = "",
       docType = "contract",
       flagIds = [],
       entities = [],
-    } = body;
+    } = validation.data;
 
     // Security rule 4: NEVER store original text.
     // Scrub any remaining entity values before saving to danger memory

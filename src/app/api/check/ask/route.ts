@@ -3,6 +3,7 @@ import { callClocked } from "@/server/clocked";
 import { splitIntoClauses, Clause } from "@/lib/clauses";
 import { formatApiError } from "@/server/errors";
 import { checkRateLimit } from "@/server/store";
+import { validateBody, AskSchema } from "@/lib/validation";
 
 export const maxDuration = 60;
 
@@ -28,6 +29,8 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
+    const validation = validateBody(AskSchema, body);
+    if ("error" in validation) return validation.error;
     const {
       question = "",
       cleanText = "",
@@ -36,9 +39,9 @@ export async function POST(req: NextRequest) {
       question: string;
       cleanText?: string;
       clauses?: Clause[];
-    } = body;
+    } = validation.data;
 
-    const trimmedQuery = question.trim().slice(0, 500);
+    const trimmedQuery = (question || "").trim().slice(0, 500);
     if (!trimmedQuery) {
       return NextResponse.json(
         { error: "Question cannot be empty" },

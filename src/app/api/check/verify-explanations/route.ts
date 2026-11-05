@@ -3,6 +3,7 @@ import { callClocked } from "@/server/clocked";
 import { formatApiError } from "@/server/errors";
 import { checkRateLimit } from "@/server/store";
 import { splitForClocked, sumChunkCredits } from "@/lib/chunking";
+import { validateBody, VerifyExplanationsSchema } from "@/lib/validation";
 
 export const maxDuration = 60;
 
@@ -34,7 +35,9 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { cleanText = "", items = [] }: { cleanText: string; items: ExplanationItem[] } = body;
+    const validation = validateBody(VerifyExplanationsSchema, body);
+    if ("error" in validation) return validation.error;
+    const { cleanText = "", items = [] } = validation.data;
 
     if (!cleanText || items.length === 0) {
       return NextResponse.json({

@@ -10,6 +10,7 @@ import {
 import { storeSet } from "@/server/store";
 import { checkRateLimit } from "@/server/store";
 import { formatApiError } from "@/server/errors";
+import { validateBody, ShareCreateSchema } from "@/lib/validation";
 
 export const maxDuration = 60;
 
@@ -35,6 +36,8 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
+    const validation = validateBody(ShareCreateSchema, body);
+    if ("error" in validation) return validation.error;
     const {
       anonymizedText = "",
       cleanText = "",
@@ -54,7 +57,7 @@ export async function POST(req: NextRequest) {
       docType = "contract",
       fileName = "document",
       brokenPromises = [],
-    } = body;
+    } = validation.data;
 
     // Security rule 4: NEVER store original text. Use Protect's anonymizedText
     // and scrub all entity values.

@@ -5,6 +5,7 @@ import { parseDocx } from "@/server/docx";
 import { parsePdf } from "@/server/pdf";
 import { findCommandLines, findEmails, findHiddenInText } from "@/server/inspectors";
 import { isClearlyUnrelatedText, NON_CONTRACT_MESSAGE } from "@/lib/document-kind";
+import { validateBody, ReadJsonSchema } from "@/lib/validation";
 
 export const maxDuration = 60;
 
@@ -25,9 +26,11 @@ export async function POST(req: NextRequest) {
     // Check for JSON payload (pasted text or direct OCR text)
     if (contentType.includes("application/json")) {
       const body = await req.json();
-      const rawText = body.text || "";
-      sourceType = body.sourceType || "paste";
-      fileName = body.fileName || (sourceType === "photo" ? "scanned-contract.jpg" : "pasted-document.txt");
+      const validation = validateBody(ReadJsonSchema, body);
+      if ("error" in validation) return validation.error;
+      const { text: rawText = "", sourceType: st = "paste", fileName: fn, photoBase64 } = validation.data;
+      sourceType = st;
+      fileName = fn || (sourceType === "photo" ? "scanned-contract.jpg" : "pasted-document.txt");
 
       if (rawText.length > 200000) {
         return NextResponse.json(

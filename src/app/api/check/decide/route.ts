@@ -5,6 +5,7 @@ import { applyDealContext, DealContext, filterDecideByThreshold, mergeSignals, S
 import { formatApiError } from "@/server/errors";
 import { checkRateLimit } from "@/server/store";
 import { splitForClocked, sumChunkCredits } from "@/lib/chunking";
+import { validateBody, DecideSchema } from "@/lib/validation";
 
 export const maxDuration = 60;
 
@@ -30,9 +31,9 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { cleanText = "", facts = {}, fileSignals = [], emails = [], dealContext } = body as {
-      cleanText?: string; facts?: Record<string, any>; fileSignals?: any[]; emails?: any[]; dealContext?: DealContext;
-    };
+    const validation = validateBody(DecideSchema, body);
+    if ("error" in validation) return validation.error;
+    const { cleanText = "", facts = {}, fileSignals = [], emails = [], dealContext } = validation.data;
 
     // 1. Build State string
     const factLines = Object.entries(facts)

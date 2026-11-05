@@ -3,6 +3,7 @@ import { callClocked } from "@/server/clocked";
 import { formatApiError } from "@/server/errors";
 import { checkRateLimit } from "@/server/store";
 import { splitForClocked, sumChunkCredits } from "@/lib/chunking";
+import { validateBody, TextBodySchema } from "@/lib/validation";
 
 export const maxDuration = 60;
 
@@ -28,7 +29,9 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const text: string = body.cleanText || body.text || "";
+    const validation = validateBody(TextBodySchema, body);
+    if ("error" in validation) return validation.error;
+    const text: string = validation.data.cleanText || validation.data.text || "";
     const chunks = splitForClocked(text);
 
     const fieldsSchema: Record<string, any> = {

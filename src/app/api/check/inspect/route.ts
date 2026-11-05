@@ -3,13 +3,16 @@ import { callClocked } from "@/server/clocked";
 import { ScriptItem } from "@/lib/types";
 import { formatApiError } from "@/server/errors";
 import { splitForClocked } from "@/lib/chunking";
+import { validateBody, InspectSchema } from "@/lib/validation";
 
 export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const scripts: ScriptItem[] = body.scripts || [];
+    const validation = validateBody(InspectSchema, body);
+    if ("error" in validation) return validation.error;
+    const { scripts } = validation.data;
 
     if (!scripts || scripts.length === 0) {
       return NextResponse.json({

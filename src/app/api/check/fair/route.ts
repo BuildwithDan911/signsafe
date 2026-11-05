@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { callClocked } from "@/server/clocked";
 import { formatApiError } from "@/server/errors";
 import { checkRateLimit } from "@/server/store";
+import { validateBody, FairSchema } from "@/lib/validation";
 
 export const maxDuration = 60;
 
@@ -33,15 +34,13 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
+    const validation = validateBody(FairSchema, body);
+    if ("error" in validation) return validation.error;
     const {
       quotes = [],
       facts = {},
       cleanText = "",
-    }: {
-      quotes: QuoteItem[];
-      facts: Record<string, any>;
-      cleanText?: string;
-    } = body;
+    } = validation.data;
 
     // Filter to at most 6 valid quotes
     const targetQuotes = quotes

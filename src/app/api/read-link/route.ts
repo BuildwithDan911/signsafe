@@ -4,20 +4,19 @@ import { SignDoc } from "@/lib/types";
 import { fetchAndParseLink } from "@/server/link";
 import { findCommandLines, findEmails } from "@/server/inspectors";
 import { isClearlyUnrelatedText, NON_CONTRACT_MESSAGE } from "@/lib/document-kind";
+import { validateBody, ReadLinkSchema } from "@/lib/validation";
 
 export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const urlStr = (body.url || "").trim();
-
-    if (!urlStr) {
-      return NextResponse.json({ error: "No URL provided" }, { status: 400 });
-    }
+    const validation = validateBody(ReadLinkSchema, body);
+    if ("error" in validation) return validation.error;
+    const { url } = validation.data;
 
     // fetchAndParseLink enforces SSRF checks, redirects, timeout, and 2 MB limit
-    const parsed = await fetchAndParseLink(urlStr);
+    const parsed = await fetchAndParseLink(url);
 
     if (isClearlyUnrelatedText(parsed.text)) {
       return NextResponse.json(
@@ -42,7 +41,7 @@ export async function POST(req: NextRequest) {
 
     const emails = findEmails(parsed.text);
     const linkedName = parsed.pdfBase64
-      ? new URL(urlStr).pathname.split("/").filter(Boolean).pop() || "linked-document.pdf"
+      ? new URL(url).pathname.split("/").filter(Boolean).pop() || "linked-document.pdf"
       : undefined;
     const pdfFileName = linkedName && /\.pdf$/i.test(linkedName)
       ? linkedName
@@ -53,7 +52,7 @@ export async function POST(req: NextRequest) {
       sourceType: parsed.pdfBase64 ? "pdf" : "link",
       fileName: parsed.pdfBase64
         ? pdfFileName || "linked-document.pdf"
-        : parsed.title ? `${parsed.title.slice(0, 50)} (Web Page)` : urlStr,
+        : parsed.title ? `${parsed.title.slice(0, 50)} (Web Page)` : url,
       text: fullText,
       hiddenText: parsed.hiddenText,
       fileSignals: [],
