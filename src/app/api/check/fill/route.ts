@@ -8,6 +8,7 @@ import { splitForClocked, sumChunkCredits } from "@/lib/chunking";
 import { validateBody, FillSchema } from "@/lib/validation";
 
 export const maxDuration = 60;
+export const runtime = "nodejs";
 
 interface FlagInput {
   id: string;

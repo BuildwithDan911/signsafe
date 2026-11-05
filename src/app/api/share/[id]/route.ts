@@ -7,6 +7,7 @@ import { formatApiError } from "@/server/errors";
 import { validateBody, SharePatchSchema } from "@/lib/validation";
 
 export const maxDuration = 60;
+export const runtime = "nodejs";
 
 interface RouteProps {
   params: Promise<{ id: string }>;

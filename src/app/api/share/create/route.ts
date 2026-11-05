@@ -13,6 +13,7 @@ import { formatApiError } from "@/server/errors";
 import { validateBody, ShareCreateSchema } from "@/lib/validation";
 
 export const maxDuration = 60;
+export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {

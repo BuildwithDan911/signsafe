@@ -8,6 +8,7 @@ import { splitForClocked, sumChunkCredits } from "@/lib/chunking";
 import { validateBody, DecideSchema } from "@/lib/validation";
 
 export const maxDuration = 60;
+export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {

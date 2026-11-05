@@ -5,6 +5,7 @@ import { checkRateLimit } from "@/server/store";
 import { validateBody, FairSchema } from "@/lib/validation";
 
 export const maxDuration = 60;
+export const runtime = "nodejs";
 
 interface QuoteItem {
   id?: string;

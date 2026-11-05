@@ -3,6 +3,7 @@ import { checkDangerMemory } from "@/server/dangerMemory";
 import { formatApiError } from "@/server/errors";
 
 export const maxDuration = 60;
+export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {

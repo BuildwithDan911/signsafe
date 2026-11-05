@@ -5,6 +5,7 @@ import { callClocked } from "@/server/clocked";
 import { getDailyCreditsUsed } from "@/server/store";
 
 export const maxDuration = 60;
+export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   if (process.env.NODE_ENV === "production") {

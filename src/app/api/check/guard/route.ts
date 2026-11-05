@@ -6,6 +6,7 @@ import { splitForClocked, sumChunkCredits } from "@/lib/chunking";
 import { validateBody, GuardSchema } from "@/lib/validation";
 
 export const maxDuration = 60;
+export const runtime = "nodejs";
 
 type GuardEvidence = { start?: number; end?: number; quote?: string };
 

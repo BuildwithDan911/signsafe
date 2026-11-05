@@ -11,6 +11,7 @@ import {
 } from "@/lib/compare";
 
 export const maxDuration = 60;
+export const runtime = "nodejs";
 
 interface CompareApiResponse {
   model?: string;

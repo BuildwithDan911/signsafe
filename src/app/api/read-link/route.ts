@@ -7,6 +7,7 @@ import { isClearlyUnrelatedText, NON_CONTRACT_MESSAGE } from "@/lib/document-kin
 import { validateBody, ReadLinkSchema } from "@/lib/validation";
 
 export const maxDuration = 60;
+export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {

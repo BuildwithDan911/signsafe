@@ -6,6 +6,7 @@ import { splitForClocked, sumChunkCredits } from "@/lib/chunking";
 import { validateBody, VerifyExplanationsSchema } from "@/lib/validation";
 
 export const maxDuration = 60;
+export const runtime = "nodejs";
 
 interface ExplanationItem {
   flagId: string;

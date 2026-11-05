@@ -6,6 +6,7 @@ import { checkRateLimit } from "@/server/store";
 import { validateBody, DangerMemoryContributeSchema } from "@/lib/validation";
 
 export const maxDuration = 60;
+export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {
