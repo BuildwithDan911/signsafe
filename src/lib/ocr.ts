@@ -73,3 +73,56 @@ export async function runClientOcr(
     throw new Error(`OCR failed: ${err.message}`);
   }
 }
+
+/** Render every PDF page and OCR it when the PDF text layer is too sparse. */
+export async function runPdfOcr(
+  file: File,
+  onProgress?: (percent: number, status: string) => void
+): Promise<{ text: string; pageCount: number }> {
+  const pdfjs = await import("pdfjs-dist");
+  pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+    "pdfjs-dist/build/pdf.worker.min.js",
+    import.meta.url
+  ).toString();
+  const pdf = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+  if (pdf.numPages > 4) {
+    const pageCount = pdf.numPages;
+    await pdf.destroy();
+    throw new Error(`This PDF has ${pageCount} pages. SignSafe supports PDFs up to 4 pages. Split it into files of 4 pages or fewer and check each section separately.`);
+  }
+  const { createWorker } = await import("tesseract.js");
+  const worker = await createWorker("eng", 1, {
+    logger: (message) => {
+      if (onProgress && message.status) {
+        onProgress(Math.round((message.progress || 0) * 100), message.status);
+      }
+    },
+  });
+  const pageCount = pdf.numPages;
+  const pageTexts: string[] = [];
+
+  try {
+    for (let pageNumber = 1; pageNumber <= pageCount; pageNumber += 1) {
+      onProgress?.(Math.round(((pageNumber - 1) / pageCount) * 100), `page ${pageNumber} of ${pageCount}`);
+      const page = await pdf.getPage(pageNumber);
+      const viewport = page.getViewport({ scale: 1.6 });
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.ceil(viewport.width);
+      canvas.height = Math.ceil(viewport.height);
+      const context = canvas.getContext("2d");
+      if (!context) throw new Error("Unable to render a PDF page for OCR");
+
+      await page.render({ canvasContext: context, viewport }).promise;
+      const result = await worker.recognize(canvas.toDataURL("image/jpeg", 0.85));
+      pageTexts.push(result.data.text || "");
+      page.cleanup();
+      canvas.width = 0;
+      canvas.height = 0;
+    }
+  } finally {
+    await worker.terminate();
+    await pdf.destroy();
+  }
+
+  return { text: pageTexts.join("\n\n"), pageCount };
+}

@@ -42,4 +42,5 @@ export interface SignDoc {
   metadata: DocMetadata;
   emails: EmailItem[];
   pdfBase64?: string;
+  pdfPageCount?: number;
 }

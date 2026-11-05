@@ -1,13 +1,17 @@
 import { parseHTML } from "linkedom";
 import { Readability } from "@mozilla/readability";
 import { validateSsrfUrl } from "./inspectors";
-import { HiddenTextItem, ScriptItem } from "@/lib/types";
+import { parsePdf } from "./pdf";
+import { DocMetadata, HiddenTextItem, ScriptItem } from "@/lib/types";
 
 export interface LinkParseResult {
   text: string;
   hiddenText: HiddenTextItem[];
   scripts: ScriptItem[];
   title?: string;
+  pdfBase64?: string;
+  pdfPageCount?: number;
+  metadata?: DocMetadata;
 }
 
 export async function fetchAndParseLink(initialUrl: string): Promise<LinkParseResult> {
@@ -32,7 +36,7 @@ export async function fetchAndParseLink(initialUrl: string): Promise<LinkParseRe
         redirect: "manual",
         headers: {
           "User-Agent": "SignSafe-Audit/1.0 (Document Reviewer; +https://signsafe.org)",
-          Accept: "text/html, text/plain",
+          Accept: "application/pdf, text/html, text/plain;q=0.9, */*;q=0.1",
         },
       });
     } catch (err: any) {
@@ -65,20 +69,44 @@ export async function fetchAndParseLink(initialUrl: string): Promise<LinkParseRe
     throw new Error(`This link can't be checked: HTTP ${response?.status || "error"}`);
   }
 
-  // 3. Content-Type check: accept only text/html or text/plain
+  // 3. Read a bounded response, then identify PDFs by their actual file signature.
   const contentType = (response.headers.get("content-type") || "").toLowerCase();
-  if (!contentType.includes("text/html") && !contentType.includes("text/plain")) {
-    throw new Error(`This link can't be checked: Unsupported content type (${contentType || "unknown"})`);
-  }
-
-  // 4. Read body with 2 MB cap
   const maxBytes = 2 * 1024 * 1024;
   const arrayBuffer = await response.arrayBuffer();
   if (arrayBuffer.byteLength > maxBytes) {
     throw new Error("This link can't be checked: Content exceeds 2 MB limit");
   }
 
-  const rawText = Buffer.from(arrayBuffer).toString("utf-8");
+  const buffer = Buffer.from(arrayBuffer);
+  const isPdf = buffer.subarray(0, 5).toString("ascii") === "%PDF-";
+
+  if (isPdf) {
+    const parsedPdf = await parsePdf(buffer);
+    if (parsedPdf.pageCount > 4) {
+      throw new Error(`This PDF has ${parsedPdf.pageCount} pages. SignSafe supports PDFs up to 4 pages. Split it into files of 4 pages or fewer and check each section separately.`);
+    }
+    if (!parsedPdf.text.trim()) {
+      throw new Error("This PDF link has no readable text layer. Download it and use Upload file so SignSafe can run OCR on its pages.");
+    }
+    return {
+      text: parsedPdf.text,
+      hiddenText: [],
+      scripts: [],
+      pdfBase64: parsedPdf.pdfBase64,
+      pdfPageCount: parsedPdf.pageCount,
+      metadata: parsedPdf.metadata,
+    };
+  }
+
+  if (contentType.includes("application/pdf") || /\.pdf(?:$|[?#])/i.test(currentUrl)) {
+    throw new Error("This link returned a web page instead of the PDF file. Try the direct PDF download link, or download it and use Upload file.");
+  }
+
+  if (!contentType.includes("text/html") && !contentType.includes("text/plain")) {
+    throw new Error(`This link can't be checked: Unsupported content type (${contentType || "unknown"})`);
+  }
+
+  const rawText = buffer.toString("utf-8");
 
   if (contentType.includes("text/plain")) {
     return {
@@ -91,19 +119,8 @@ export async function fetchAndParseLink(initialUrl: string): Promise<LinkParseRe
   // 5. Parse HTML with linkedom
   const { document } = parseHTML(rawText);
   const hiddenText: HiddenTextItem[] = [];
-  const scripts: ScriptItem[] = [];
-
-  // Extract inline script contents
-  const scriptTags = Array.from(document.querySelectorAll("script"));
-  for (const scriptEl of scriptTags) {
-    const code = (scriptEl.textContent || "").trim();
-    if (code) {
-      scripts.push({
-        origin: "page-script",
-        code: code.slice(0, 10000), // Cap long scripts
-      });
-    }
-  }
+  // Website JavaScript belongs to the site, not to the document being reviewed.
+  // Do not send page bundles, analytics, or asset manifests to Inspect.
 
   // Find hidden elements
   const allElements = Array.from(document.querySelectorAll("*"));
@@ -163,10 +180,14 @@ export async function fetchAndParseLink(initialUrl: string): Promise<LinkParseRe
     extractedText = (cleanDoc.body?.textContent || "").replace(/\s+/g, " ").trim();
   }
 
+  if (!extractedText.trim()) {
+    throw new Error("This page has no readable document text. Try a direct document link or upload the file.");
+  }
+
   return {
     text: extractedText,
     hiddenText,
-    scripts,
+    scripts: [],
     title: pageTitle,
   };
 }

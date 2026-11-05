@@ -9,7 +9,9 @@ const redisToken =
 
 let redisClient: Redis | null = null;
 
-if (redisUrl && redisToken) {
+// Keep unit tests deterministic and offline; production and development still
+// use Upstash whenever its credentials are configured.
+if (redisUrl && redisToken && process.env.NODE_ENV !== "test") {
   try {
     redisClient = new Redis({
       url: redisUrl.replace(/['"]/g, ""),

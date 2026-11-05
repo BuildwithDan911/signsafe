@@ -4,6 +4,7 @@ import { SignDoc, FileSignalItem, SourceType } from "@/lib/types";
 import { parseDocx } from "@/server/docx";
 import { parsePdf } from "@/server/pdf";
 import { findCommandLines, findEmails, findHiddenInText } from "@/server/inspectors";
+import { isClearlyUnrelatedText, NON_CONTRACT_MESSAGE } from "@/lib/document-kind";
 
 export const maxDuration = 60;
 
@@ -19,6 +20,7 @@ export async function POST(req: NextRequest) {
     let metadata: any = {};
     let hiddenText: any[] = [];
     let pdfBase64: string | undefined = undefined;
+    let pdfPageCount: number | undefined = undefined;
 
     // Check for JSON payload (pasted text or direct OCR text)
     if (contentType.includes("application/json")) {
@@ -99,7 +101,18 @@ export async function POST(req: NextRequest) {
       } else if (lowerName.endsWith(".pdf")) {
         sourceType = "pdf";
         const pdfRes = await parsePdf(buffer);
-        text = pdfRes.text;
+        const suppliedPageCount = Number(formData.get("pdfPageCount"));
+        pdfPageCount = Number.isInteger(suppliedPageCount) && suppliedPageCount > 0
+          ? suppliedPageCount
+          : pdfRes.pageCount;
+        if (pdfPageCount > 4) {
+          return NextResponse.json(
+            { error: `This PDF has ${pdfPageCount} pages. SignSafe currently supports PDFs up to 4 pages. Split it into files of 4 pages or fewer and check each section separately.` },
+            { status: 413 }
+          );
+        }
+        const ocrText = formData.get("ocrText");
+        text = typeof ocrText === "string" && ocrText.trim() ? ocrText.trim() : pdfRes.text;
         metadata = pdfRes.metadata;
         pdfBase64 = pdfRes.pdfBase64;
       } else {
@@ -108,6 +121,13 @@ export async function POST(req: NextRequest) {
         text = buffer.toString("utf-8");
         hiddenText = findHiddenInText(text);
       }
+    }
+
+    if (isClearlyUnrelatedText(text)) {
+      return NextResponse.json(
+        { error: NON_CONTRACT_MESSAGE, code: "NO_CONTRACT_TEXT" },
+        { status: 422 }
+      );
     }
 
     // In every text: find command lines
@@ -150,6 +170,7 @@ export async function POST(req: NextRequest) {
       metadata,
       emails,
       pdfBase64,
+      pdfPageCount,
     };
 
     return NextResponse.json({ signDoc });

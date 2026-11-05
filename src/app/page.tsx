@@ -19,7 +19,7 @@ import NotarySeal from "@/components/NotarySeal";
 import HeroDemoStrip from "@/components/HeroDemoStrip";
 import HowItWorks from "@/components/HowItWorks";
 import TrustRow from "@/components/TrustRow";
-import { shrinkImage, runClientOcr } from "@/lib/ocr";
+import { shrinkImage, runClientOcr, runPdfOcr } from "@/lib/ocr";
 import JudgeModeModal from "@/components/JudgeModeModal";
 import CreditsModal from "@/components/CreditsModal";
 
@@ -221,6 +221,34 @@ export default function HomePage() {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Failed to process document");
+
+        if (lower.endsWith(".pdf")) {
+          const parsedText = String(data.signDoc?.text || "").trim();
+          const pageCount = Number(data.signDoc?.pdfPageCount || 0);
+          const needsOcr = pageCount > 0
+            ? parsedText.length / pageCount < 40
+            : parsedText.length === 0;
+
+          if (needsOcr) {
+            setProcessingStatus("Reading scanned PDF pages (OCR)...");
+            const ocrResult = await runPdfOcr(file, (percent, status) => {
+              setProcessingStatus(`Reading PDF ${status}: ${percent}%`);
+            });
+            if (ocrResult.pageCount > 4) {
+              throw new Error(`This PDF has ${ocrResult.pageCount} pages. SignSafe supports PDFs up to 4 pages. Split it into files of 4 pages or fewer and check each section separately.`);
+            }
+            if (!ocrResult.text.trim()) throw new Error("No readable text found in the PDF pages");
+
+            const ocrForm = new FormData();
+            ocrForm.append("file", file);
+            ocrForm.append("ocrText", ocrResult.text);
+            ocrForm.append("pdfPageCount", String(ocrResult.pageCount));
+            const ocrRes = await fetch("/api/read", { method: "POST", body: ocrForm });
+            const ocrData = await ocrRes.json();
+            if (!ocrRes.ok) throw new Error(ocrData.error || "Failed to process OCR text");
+            data.signDoc = ocrData.signDoc;
+          }
+        }
 
         sessionStorage.setItem("signsafe_doc", JSON.stringify(data.signDoc));
         router.push("/scan");

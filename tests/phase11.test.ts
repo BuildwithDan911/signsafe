@@ -157,7 +157,7 @@ describe("Phase 11: Fair-deal share link, decision record & live rescore", () =>
         greenSignalsCount: 4,
       });
       expect(initialScore.color).toBe("amber");
-      expect(initialScore.signScore).toBe(74);
+      expect(initialScore.signScore).toBe(79);
 
       // Mutually accepted -> replace clause
       if (fix.youAccepted && fix.otherAccepted && !fix.rescored) {

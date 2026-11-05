@@ -45,4 +45,16 @@ describe("deal context scoring", () => {
     expect(applyDealContext([liability], { dealType: "service_contract", role: "service_provider", relationship: "business_to_business" }, "Each party is liable for its own negligence."))
       .toEqual([]);
   });
+
+  it("adds a separate flag for explicit uncapped liability on the user's side", () => {
+    const text = "The Designer’s total liability under this agreement is unlimited.";
+    const signals = applyDealContext([], { dealType: "freelance_agreement", role: "freelancer" }, text);
+    expect(signals.map((signal) => signal.id)).toContain("RF3.15");
+    expect(signals.find((signal) => signal.id === "RF3.15")?.evidenceTitles[0]).toContain("liability under this agreement is unlimited");
+  });
+
+  it("does not flag explicit uncapped liability that applies to the other party", () => {
+    const text = "The Designer’s total liability under this agreement is unlimited.";
+    expect(applyDealContext([], { dealType: "freelance_agreement", role: "paying" }, text)).toEqual([]);
+  });
 });

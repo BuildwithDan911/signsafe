@@ -38,7 +38,7 @@ import CreditsModal from "@/components/CreditsModal";
 import { ShareDealModal } from "@/components/ShareDealModal";
 import DangerMemoryCard from "@/components/DangerMemoryCard";
 import { MergedSignal, SIGNALS_MAP } from "@/lib/signals";
-import { ScoreResult, calculateScore, clampSignScore } from "@/lib/score";
+import { ScoreResult, calculateScore } from "@/lib/score";
 import { splitIntoClauses, Clause } from "@/lib/clauses";
 import {
   calculateDecodedBytes,
@@ -111,6 +111,7 @@ interface AuditData {
   mergedSignals?: MergedSignal[];
   confirmedIds?: string[];
   scoreResult?: ScoreResult;
+  failedSafetySteps?: string[];
   totalCredits?: number;
   timestamp?: string;
   isJudgeMode?: boolean;
@@ -966,33 +967,21 @@ Signed for the Client: Daniel Price, Creative Director`;
     verifiedItems = [],
     mergedSignals = [],
     confirmedIds = [],
-    scoreResult,
+    failedSafetySteps = [],
     totalCredits = 0,
   } = currentAudit;
 
   const effectiveScoreResult: ScoreResult = React.useMemo(() => {
-    if (!scoreResult) {
-      return {
-        signScore: 70,
-        color: "amber",
-        label: "ASK FIRST",
-        headline: "Ask first. A few items should be clarified before signing.",
-        totalPoints: 1,
-        breakdown: [],
-      };
-    }
-    if (promiseBrokenCount > 0) {
-      return calculateScore({
-        mergedSignals: mergedSignals || [],
-        guardInjection: !!hasInjection,
-        inspectMalicious: !!inspectData?.hasMalicious,
-        confirmedSignalIds: confirmedIds || [],
-        greenSignalsCount: decideData?.greenSignals?.length || 0,
-        brokenPromisesCount: promiseBrokenCount,
-      });
-    }
-    return { ...scoreResult, signScore: clampSignScore(scoreResult.signScore) };
-  }, [scoreResult, promiseBrokenCount, mergedSignals, hasInjection, inspectData, confirmedIds, decideData]);
+    return calculateScore({
+      mergedSignals: mergedSignals || [],
+      guardInjection: !!hasInjection,
+      inspectMalicious: !!inspectData?.hasMalicious,
+      confirmedSignalIds: confirmedIds || [],
+      greenSignalsCount: decideData?.greenSignals?.length || 0,
+      brokenPromisesCount: promiseBrokenCount,
+      failedSafetySteps,
+    });
+  }, [promiseBrokenCount, mergedSignals, hasInjection, inspectData, confirmedIds, decideData, failedSafetySteps]);
 
   const top3Signals = mergedSignals.slice(0, 3);
   const remainingSignals = mergedSignals.slice(3);
@@ -1324,7 +1313,7 @@ Signed for the Client: Daniel Price, Creative Director`;
               Signals add up. Nothing alone is a verdict. Below are the key warning signs identified by our multi-stage inspection, merged to cut noise and ranked by importance.
             </p>
             {audit?.contextSkipped && (
-              <p className="rounded-lg bg-[#E8A33D]/10 px-3 py-2 text-sm text-[#14213D]">You skipped the deal questions, so this result uses Clocked’s best-supported document guess.</p>
+              <p className="rounded-lg bg-[#E8A33D]/10 px-3 py-2 text-sm text-[#14213D]">No extra deal context was provided, so this result uses Clocked’s best-supported document guess.</p>
             )}
             {(audit?.sectionsChecked || 1) > 1 && (
               <p className="text-sm font-semibold text-[#1E734A]">Checked all {audit?.sectionsChecked} sections.</p>
@@ -1342,35 +1331,6 @@ Signed for the Client: Daniel Price, Creative Director`;
             </div>
           </div>
         </section>
-
-        {/* 2. HIDDEN-TRICK BANNER (GUARD INJECTION) */}
-        {hasInjection && (
-          <div className="paper-card rounded-2xl p-5 sm:p-6 bg-[#FEF2F2] border-2 border-[#D64545] shadow-sm space-y-3">
-            <div className="flex items-start gap-3">
-              <ShieldAlert className="w-6 h-6 text-[#A62626] shrink-0 mt-0.5" />
-              <div className="space-y-1.5 flex-1">
-                <h3 className="font-serif text-lg font-bold text-[#991B1B]">
-                  This document is trying to trick AI checkers.
-                </h3>
-                <p className="text-xs sm:text-sm text-[#7F1D1D] leading-relaxed">
-                  We identified hidden prompt injection instructions embedded in this document. We removed this text before checking the rest, so it cannot change our verdict.
-                </p>
-                {quarantinedQuotes.length > 0 && (
-                  <div className="mt-3 p-3 rounded-lg bg-white/90 border border-[#D64545]/25 font-mono text-xs text-[#991B1B] break-words space-y-1">
-                    <span className="text-[10px] font-bold uppercase tracking-wider block text-stone-600">
-                      Quarantined Text:
-                    </span>
-                    {quarantinedQuotes.map((q, idx) => (
-                      <div key={idx} className="italic">
-                        &quot;{q}&quot;
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* 3. HIDDEN-CODE CARD (INSPECT RESULT) */}
         {inspectData?.hasMalicious && (
@@ -2380,19 +2340,39 @@ Signed for the Client: Daniel Price, Creative Director`;
 
                 <div className="space-y-2 text-xs sm:text-sm font-mono">
                   <p className="text-xs text-stone-600">
-                    The score weighs severity, confidence, your answers, and independent findings. It stays between 26 and 94.
+                    Each category is judged from its own evidence score. The final Sign Score is their weighted average: 26–49 red, 50–79 amber, and 80–94 green. A specific serious warning can still need attention in any band.
                   </p>
-                  {effectiveScoreResult.breakdown.map((item, idx) => (
-                    <div
-                      key={idx}
-                      className={`flex items-center justify-between p-2 rounded border ${item.points < 0 ? "bg-green-50 border-green-200" : "bg-stone-50 border-stone-200"}`}
-                    >
-                      <span className={item.points < 0 ? "text-[#1E734A]" : "text-stone-700"}>{item.reason}</span>
-                      <span className={item.points < 0 ? "font-bold text-[#1E734A]" : "font-bold text-[#A62626]"}>
-                        {item.points < 0 ? "+" : "−"}{Math.abs(item.points).toFixed(1)} score
-                      </span>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {(effectiveScoreResult.dimensions || []).map((dimension) => (
+                      <div key={dimension.key} className="rounded-lg border border-stone-200 bg-stone-50 p-3 space-y-1">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="font-semibold text-[#14213D]">{dimension.label}</span>
+                          <span className="font-bold text-[#14213D]">{Math.round(dimension.score)} / 100</span>
+                        </div>
+                        <div className="flex items-center justify-between text-[11px] text-stone-600">
+                          <span>{dimension.source}</span>
+                          <span>{Math.round(dimension.weight * 100)}% of total</span>
+                        </div>
+                        {dimension.note && <p className="text-[11px] leading-relaxed text-stone-600">{dimension.note}</p>}
+                      </div>
+                    ))}
+                  </div>
+                  {effectiveScoreResult.breakdown.length > 0 && (
+                    <div className="pt-2 space-y-1">
+                      <p className="text-[11px] font-bold uppercase tracking-wide text-stone-600">Signals affecting the risk band</p>
+                      {effectiveScoreResult.breakdown.map((item, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between gap-3 p-2 rounded border bg-stone-50 border-stone-200"
+                        >
+                          <span className="text-stone-700">{item.reason}</span>
+                          <span className="shrink-0 font-bold text-[#A62626]">
+                            +{item.points} risk points
+                          </span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  )}
 
                   <div className="pt-2 border-t border-stone-200 flex items-center justify-between text-stone-900 font-bold">
                     <span>Outcome points: {effectiveScoreResult.totalPoints}</span>

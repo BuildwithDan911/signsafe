@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { callClocked } from "@/server/clocked";
 import { checkRateLimit } from "@/server/store";
 import { formatApiError } from "@/server/errors";
+import { isClearlyUnrelatedText, NON_CONTRACT_MESSAGE } from "@/lib/document-kind";
 import {
   alignClauses,
   MeaningChange,
@@ -76,6 +77,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: "Both text1 and text2 are required for comparison." },
         { status: 400 }
+      );
+    }
+
+    if (isClearlyUnrelatedText(text1) || isClearlyUnrelatedText(text2)) {
+      return NextResponse.json(
+        { error: `No contract text found in one of the versions. ${NON_CONTRACT_MESSAGE}`, code: "NO_CONTRACT_TEXT" },
+        { status: 422 }
       );
     }
 

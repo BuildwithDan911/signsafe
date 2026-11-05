@@ -9,7 +9,6 @@ import {
   CheckCircle2,
   AlertTriangle,
   Loader2,
-  ShieldAlert,
   Lock,
   FileSearch,
   Eye,
@@ -80,10 +79,10 @@ export default function ScanPage() {
   // Question wizard state
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
   const [questionsDone, setQuestionsDone] = useState(false);
+  const [dealContext, setDealContext] = useState<DealContext | null>(null);
   const [showDealContext, setShowDealContext] = useState(false);
   const [contextGuess, setContextGuess] = useState<any>(null);
   const [contextForm, setContextForm] = useState<DealContext>({});
-  const [dealContext, setDealContext] = useState<DealContext | null>(null);
   const contextResolver = useRef<((value: DealContext) => void) | null>(null);
 
   const [totalCredits, setTotalCredits] = useState<number>(0);
@@ -213,6 +212,46 @@ export default function ScanPage() {
     let runningCredits = 0;
     let extractedFacts: Record<string, any> = {};
 
+    const runEmptyFinalStages = async () => {
+      updateStep("fill", { status: "running" });
+      try {
+        const fillRes = await fetch("/api/check/fill", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ cleanText: currentClean, flags: [], clarificationFlags: [] }),
+        });
+        if (!fillRes.ok) throw new Error("Clause drafting unavailable");
+        const fillData = await fillRes.json();
+        setFillData(fillData);
+        setFillItems([]);
+        updateStep("fill", {
+          status: "done", credits: 0, cached: true,
+          summary: "No clauses drafted because risk evaluation was unavailable",
+        });
+      } catch (err: any) {
+        updateStep("fill", { status: "error", error: err.message, summary: "Clause drafting unavailable" });
+      }
+
+      updateStep("verify", { status: "running" });
+      try {
+        const verifyRes = await fetch("/api/check/verify-explanations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ cleanText: currentClean, items: [] }),
+        });
+        if (!verifyRes.ok) throw new Error("Explanation verification unavailable");
+        const verifyData = await verifyRes.json();
+        setVerifyData(verifyData);
+        setVerifiedItems([]);
+        updateStep("verify", {
+          status: "done", credits: 0, cached: true,
+          summary: "Nothing to verify because no clauses were drafted",
+        });
+      } catch (err: any) {
+        updateStep("verify", { status: "error", error: err.message, summary: "Explanation verification unavailable" });
+      }
+    };
+
     // 1. Guard
     updateStep("guard", { status: "running" });
     try {
@@ -222,6 +261,7 @@ export default function ScanPage() {
         body: JSON.stringify({
           text: activeDoc.text,
           pdfBase64: activeDoc.pdfBase64,
+          pdfPageCount: activeDoc.pdfPageCount,
           sourceType: activeDoc.sourceType,
         }),
       });
@@ -418,20 +458,12 @@ export default function ScanPage() {
       const value = extractedFacts[key]?.value;
       if (value && !parties.includes(String(value))) parties.push(String(value));
     }
-    const guess = {
+    const selectedContext: DealContext = {
       dealType: guessedType,
-      dealTypeLabel: extractedFacts.document_type?.value || "Not sure",
-      confidence: extractedFacts.document_type?.confidence ?? 0,
-      parties: parties.slice(0, 6),
+      party: parties[0] || "",
+      skipped: true,
     };
-    setContextGuess(guess);
-    setContextForm({ dealType: guessedType, party: parties[0] || "", role: "", transaction: "", roughValue: "", relationship: "", other: "" });
-    const selectedContext = await new Promise<DealContext>((resolve) => {
-      contextResolver.current = resolve;
-      setShowDealContext(true);
-    });
     setDealContext(selectedContext);
-    setShowDealContext(false);
 
     // 5. Decide (Phase 5)
     updateStep("decide", { status: "running" });
@@ -455,6 +487,8 @@ export default function ScanPage() {
           error: data.error || "Decide check failed",
           summary: "Risk evaluation unavailable",
         });
+
+        await runEmptyFinalStages();
       } else {
         const credits = data.meta?.credits || 0;
         const cached = !!data.meta?.cached;
@@ -618,6 +652,7 @@ export default function ScanPage() {
         error: err.message,
         summary: "Risk evaluation unavailable",
       });
+      await runEmptyFinalStages();
     }
   };
 
@@ -773,6 +808,7 @@ export default function ScanPage() {
           body: JSON.stringify({
             text: doc.text,
             pdfBase64: doc.pdfBase64,
+            pdfPageCount: doc.pdfPageCount,
             sourceType: doc.sourceType,
           }),
         });
@@ -989,6 +1025,7 @@ export default function ScanPage() {
       sectionsChecked: Number(decideData?.sectionsChecked || extractData?.sectionsChecked || 1),
       mergedSignals,
       confirmedIds,
+      failedSafetySteps: failedSafety,
       dangerMatch,
       scoreResult,
       totalCredits: isJudgeMode ? 0 : totalCredits,
@@ -1170,37 +1207,6 @@ export default function ScanPage() {
           </div>
         )}
 
-        {/* FULL-WIDTH RED-BORDERED BANNER: PROMPT INJECTION QUARANTINE */}
-        {hasInjection && (
-          <div className="border-2 border-[#D64545] bg-[#FEF2F2] rounded-2xl p-6 sm:p-7 shadow-sm space-y-3">
-            <div className="flex items-center gap-2.5 text-[#A62626]">
-              <ShieldAlert className="w-6 h-6 flex-shrink-0" />
-              <h2 className="font-serif text-xl sm:text-2xl font-bold tracking-tight">
-                This document is trying to trick AI checkers.
-              </h2>
-            </div>
-            <p className="text-xs sm:text-sm text-[#A62626]/90">
-              We removed this text before checking the rest, so it can&apos;t change our answer.
-            </p>
-
-            <div className="space-y-2 pt-1">
-              {quarantinedQuotes.map((quote, idx) => (
-                <div
-                  key={idx}
-                  className="bg-white/95 border border-[#D64545]/30 rounded-xl p-3.5 shadow-2xs"
-                >
-                  <div className="text-[10px] font-mono uppercase tracking-wider text-[#A62626] font-bold mb-1">
-                    Quarantined Prompt Injection Quote #{idx + 1}
-                  </div>
-                  <pre className="text-xs sm:text-[13px] font-mono text-stone-900 bg-stone-50 p-2.5 rounded-lg whitespace-pre-wrap break-words border border-stone-200/70 leading-relaxed">
-                    &ldquo;{quote}&rdquo;
-                  </pre>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* HIDDEN CODE ALERT CARD (INSPECT RESULT) */}
         {inspectData && (inspectData.hasMalicious || inspectData.hasSuspicious) && (
           <div className="border-2 border-[#D64545] bg-[#FEF2F2] rounded-2xl p-6 shadow-sm space-y-3">
@@ -1365,55 +1371,62 @@ export default function ScanPage() {
                 <h2 id="deal-context-title" className="font-serif text-xl sm:text-2xl font-bold text-[#14213D]">Help us understand your deal</h2>
                 <p className="mt-1 text-sm text-stone-700">We use your side of the agreement to judge whether a term is normal or one-sided.</p>
                 <p className="mt-2 text-xs text-stone-600">Clocked’s document guess: <strong>{contextGuess.dealTypeLabel}</strong>{contextGuess.confidence < 0.5 ? " — uncertain; please choose the closest match." : ""}</p>
+                <p className="mt-2 text-xs text-stone-600">This check continues automatically with Clocked’s best guess after 15 seconds. Choose Skip to continue now, or answer below to tailor the check.</p>
               </div>
               <button type="button" onClick={() => finishDealContext(true)} className="shrink-0 text-sm text-stone-700 underline">Skip</button>
             </div>
 
-            <div className="space-y-2">
-              <p className="text-sm font-semibold text-[#14213D]">1. Which party are you?</p>
-              <div className="flex flex-wrap gap-2">
-                {contextGuess.parties.map((party: string) => (
-                  <button key={party} type="button" onClick={() => setContextForm((p) => ({ ...p, party }))} className={`rounded-full border px-3 py-2 text-sm ${contextForm.party === party ? "border-[#14213D] bg-[#14213D] text-white" : "border-stone-300 bg-white text-[#14213D]"}`}>{party}</button>
-                ))}
-                <button type="button" onClick={() => setContextForm((p) => ({ ...p, party: "other" }))} className={`rounded-full border px-3 py-2 text-sm ${contextForm.party === "other" ? "border-[#14213D] bg-[#14213D] text-white" : "border-stone-300 bg-white text-[#14213D]"}`}>Other</button>
-              </div>
-              <p className="text-xs text-stone-600">Choose your role in this deal:</p>
-              <div className="flex flex-wrap gap-2">
-                {[
-                  ["being_hired", "I’m being hired"], ["hiring", "I’m hiring"], ["paying", "I’m paying for something"],
-                  ["being_paid", "I’m being paid"], ["renting", "I’m renting"], ["borrowing", "I’m borrowing"],
-                ].map(([role, label]) => (
-                  <button key={role} type="button" onClick={() => setContextForm((p) => ({ ...p, role }))} className={`rounded-full border px-3 py-2 text-sm ${contextForm.role === role ? "border-[#14213D] bg-[#14213D] text-white" : "border-stone-300 bg-white text-[#14213D]"}`}>{label}</button>
-                ))}
-              </div>
-            </div>
-
             <div className="grid gap-5 sm:grid-cols-2">
-              <label className="space-y-2 text-sm font-semibold text-[#14213D]">2. What is this deal?
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-[#14213D]">1. Which side are you on?</p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    ["being_hired", "I’m being hired"], ["hiring", "I’m hiring"], ["paying", "I’m paying"],
+                    ["being_paid", "I’m being paid"], ["renting", "I’m renting"], ["borrowing", "I’m borrowing"], ["other", "Other"],
+                  ].map(([role, label]) => (
+                    <button key={role} type="button" onClick={() => setContextForm((p) => ({ ...p, role }))} className={`rounded-full border px-3 py-2 text-sm ${contextForm.role === role ? "border-[#14213D] bg-[#14213D] text-white" : "border-stone-300 bg-white text-[#14213D]"}`}>{label}</button>
+                  ))}
+                </div>
+              </div>
+              <label className="space-y-2 text-sm font-semibold text-[#14213D]">2. What kind of deal is this?
                 <select value={contextForm.dealType || "other"} onChange={(e) => setContextForm((p) => ({ ...p, dealType: e.target.value }))} className="block w-full rounded-lg border border-stone-300 bg-white p-3 font-normal">
                   <option value="job_offer">Job offer</option><option value="employment_contract">Employment contract</option><option value="freelance_agreement">Freelance or service contract</option><option value="purchase_payment">Purchase or payment agreement</option><option value="tenancy_lease">Tenancy</option><option value="loan_credit">Loan</option><option value="sponsorship_deal">Sponsorship</option><option value="terms_conditions">Terms and conditions</option><option value="nda">NDA</option><option value="other">Other</option>
                 </select>
-                <span className="block pt-1 text-xs font-normal">Which best describes what is happening?</span>
-                <select value={contextForm.transaction || ""} onChange={(e) => setContextForm((p) => ({ ...p, transaction: e.target.value }))} className="block w-full rounded-lg border border-stone-300 bg-white p-3 font-normal">
-                  <option value="">Choose one</option><option value="being_hired">I’m being hired</option><option value="hiring">I’m hiring</option><option value="paying">I’m paying for something</option><option value="being_paid">I’m being paid</option><option value="renting">I’m renting</option><option value="borrowing">I’m borrowing</option><option value="other">Other</option>
-                </select>
-              </label>
-              <label className="space-y-2 text-sm font-semibold text-[#14213D]">3. Rough value
-                <select value={contextForm.roughValue || ""} onChange={(e) => setContextForm((p) => ({ ...p, roughValue: e.target.value }))} className="block w-full rounded-lg border border-stone-300 bg-white p-3 font-normal">
-                  <option value="">Not sure / prefer not to say</option><option value="under 500">Under 500</option><option value="500 to 5,000">500–5,000</option><option value="5,000 to 50,000">5,000–50,000</option><option value="over 50,000">Over 50,000</option><option value="other">Other</option>
-                </select>
               </label>
             </div>
 
-            <div className="space-y-2">
-              <p className="text-sm font-semibold text-[#14213D]">4. Who is making this deal?</p>
-              <div className="flex flex-wrap gap-2">
-                {[["business_to_business", "Business to business"], ["individual", "A business and an individual"], ["other", "Other / not sure"]].map(([value, label]) => (
-                  <button key={value} type="button" onClick={() => setContextForm((p) => ({ ...p, relationship: value }))} className={`rounded-full border px-3 py-2 text-sm ${contextForm.relationship === value ? "border-[#14213D] bg-[#14213D] text-white" : "border-stone-300 bg-white text-[#14213D]"}`}>{label}</button>
-                ))}
+            <details className="rounded-xl border border-stone-200 px-4 py-3">
+              <summary className="cursor-pointer text-sm font-semibold text-[#14213D]">Add details (optional)</summary>
+              <div className="mt-4 space-y-5">
+                {contextGuess.parties.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-[#14213D]">Which party are you?</p>
+                    <div className="flex flex-wrap gap-2">
+                      {contextGuess.parties.map((party: string) => (
+                        <button key={party} type="button" onClick={() => setContextForm((p) => ({ ...p, party }))} className={`rounded-full border px-3 py-2 text-sm ${contextForm.party === party ? "border-[#14213D] bg-[#14213D] text-white" : "border-stone-300 bg-white text-[#14213D]"}`}>{party}</button>
+                      ))}
+                      <button type="button" onClick={() => setContextForm((p) => ({ ...p, party: "other" }))} className={`rounded-full border px-3 py-2 text-sm ${contextForm.party === "other" ? "border-[#14213D] bg-[#14213D] text-white" : "border-stone-300 bg-white text-[#14213D]"}`}>Other</button>
+                    </div>
+                  </div>
+                )}
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <label className="space-y-2 text-sm font-semibold text-[#14213D]">Rough value
+                    <select value={contextForm.roughValue || ""} onChange={(e) => setContextForm((p) => ({ ...p, roughValue: e.target.value }))} className="block w-full rounded-lg border border-stone-300 bg-white p-3 font-normal">
+                      <option value="">Not sure / prefer not to say</option><option value="under 500">Under 500</option><option value="500 to 5,000">500–5,000</option><option value="5,000 to 50,000">5,000–50,000</option><option value="over 50,000">Over 50,000</option><option value="other">Other</option>
+                    </select>
+                  </label>
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-[#14213D]">Who is making this deal?</p>
+                    <div className="flex flex-wrap gap-2">
+                      {[["business_to_business", "Business to business"], ["individual", "Business and individual"], ["other", "Not sure"]].map(([value, label]) => (
+                        <button key={value} type="button" onClick={() => setContextForm((p) => ({ ...p, relationship: value }))} className={`rounded-full border px-3 py-2 text-sm ${contextForm.relationship === value ? "border-[#14213D] bg-[#14213D] text-white" : "border-stone-300 bg-white text-[#14213D]"}`}>{label}</button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-            {(contextForm.party === "other" || contextForm.dealType === "other" || contextForm.transaction === "other" || contextForm.roughValue === "other" || contextForm.relationship === "other") && (
+            </details>
+            {(contextForm.party === "other" || contextForm.role === "other" || contextForm.dealType === "other" || contextForm.roughValue === "other" || contextForm.relationship === "other") && (
               <label className="block space-y-2 text-sm font-semibold text-[#14213D]">Other details
                 <input value={contextForm.other || ""} onChange={(e) => setContextForm((p) => ({ ...p, other: e.target.value }))} className="block w-full rounded-lg border border-stone-300 bg-white p-3 font-normal" placeholder="Add a short description" />
               </label>
@@ -1441,15 +1454,18 @@ export default function ScanPage() {
             </div>
 
             <div className="space-y-2">
-              <span className="text-xs font-mono uppercase text-[#B87518] font-bold">
-                Regarding: {activeQuestion.title}
-              </span>
-              <p className="text-sm text-stone-700 leading-relaxed border-l-2 border-[#E8A33D] pl-3">
-                “{activeQuestion.evidence}”
-              </p>
-              <p className="font-serif text-base sm:text-lg text-[#14213D] leading-snug">
-                {activeQuestion.question}
-              </p>
+                <span className="text-xs font-mono uppercase text-[#B87518] font-bold">
+                  Possible warning: {activeQuestion.title}
+                </span>
+                {activeQuestion.evidence && (
+                  <blockquote className="rounded-lg border-l-4 border-[#E8A33D] bg-white px-4 py-3 text-sm text-stone-700">
+                    “{activeQuestion.evidence}”
+                  </blockquote>
+                )}
+                <p className="font-serif text-base sm:text-lg text-[#14213D] leading-snug">
+                  {activeQuestion.question}
+                </p>
+                <p className="text-xs text-stone-600">You don’t need to interpret the wording. Answer from what you were told or what happened; choose “Not sure” if you haven’t read or discussed it.</p>
             </div>
 
             <div className="pt-2 flex flex-wrap items-center gap-3">

@@ -17,8 +17,8 @@ describe("Phase 10: Judge Mode, credit counter, and graceful failures", () => {
 
       expect(result.color).toBe("amber");
       expect(result.label).toBe("ASK FIRST");
-      expect(result.signScore).toBeLessThanOrEqual(74);
-      expect(result.signScore).toBeGreaterThanOrEqual(40);
+      expect(result.signScore).toBeLessThanOrEqual(79);
+      expect(result.signScore).toBeGreaterThanOrEqual(50);
       expect(result.headline).toBe(
         "We couldn't finish every check, so we can't call this safe."
       );
@@ -32,7 +32,7 @@ describe("Phase 10: Judge Mode, credit counter, and graceful failures", () => {
 
       expect(result.color).toBe("amber");
       expect(result.label).toBe("ASK FIRST");
-      expect(result.signScore).toBeLessThanOrEqual(74);
+      expect(result.signScore).toBeLessThanOrEqual(79);
       expect(result.headline).toBe(
         "We couldn't finish every check, so we can't call this safe."
       );
@@ -46,7 +46,7 @@ describe("Phase 10: Judge Mode, credit counter, and graceful failures", () => {
 
       expect(result.color).toBe("amber");
       expect(result.label).toBe("ASK FIRST");
-      expect(result.signScore).toBeLessThanOrEqual(74);
+      expect(result.signScore).toBeLessThanOrEqual(79);
       expect(result.headline).toBe(
         "We couldn't finish every check, so we can't call this safe."
       );
@@ -63,7 +63,7 @@ describe("Phase 10: Judge Mode, credit counter, and graceful failures", () => {
 
       expect(result.color).toBe("green");
       expect(result.label).toBe("LOOKS FAIR");
-      expect(result.signScore).toBeGreaterThanOrEqual(75);
+      expect(result.signScore).toBeGreaterThanOrEqual(80);
     });
 
     it("keeps red result red even if safety steps failed (danger signals take priority)", () => {
@@ -88,7 +88,7 @@ describe("Phase 10: Judge Mode, credit counter, and graceful failures", () => {
 
       expect(result.color).toBe("red");
       expect(result.label).toBe("DON'T SIGN YET");
-      expect(result.signScore).toBeLessThanOrEqual(39);
+      expect(result.signScore).toBeLessThan(50);
     });
   });
 

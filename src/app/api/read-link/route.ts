@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { SignDoc } from "@/lib/types";
 import { fetchAndParseLink } from "@/server/link";
 import { findCommandLines, findEmails } from "@/server/inspectors";
+import { isClearlyUnrelatedText, NON_CONTRACT_MESSAGE } from "@/lib/document-kind";
 
 export const maxDuration = 60;
 
@@ -17,6 +18,13 @@ export async function POST(req: NextRequest) {
 
     // fetchAndParseLink enforces SSRF checks, redirects, timeout, and 2 MB limit
     const parsed = await fetchAndParseLink(urlStr);
+
+    if (isClearlyUnrelatedText(parsed.text)) {
+      return NextResponse.json(
+        { error: NON_CONTRACT_MESSAGE, code: "NO_CONTRACT_TEXT" },
+        { status: 422 }
+      );
+    }
 
     let fullText = parsed.text;
     if (parsed.hiddenText.length > 0) {
@@ -33,17 +41,27 @@ export async function POST(req: NextRequest) {
     }
 
     const emails = findEmails(parsed.text);
+    const linkedName = parsed.pdfBase64
+      ? new URL(urlStr).pathname.split("/").filter(Boolean).pop() || "linked-document.pdf"
+      : undefined;
+    const pdfFileName = linkedName && /\.pdf$/i.test(linkedName)
+      ? linkedName
+      : linkedName ? `${linkedName}.pdf` : undefined;
 
     const signDoc: SignDoc = {
       id: crypto.randomUUID(),
-      sourceType: "link",
-      fileName: parsed.title ? `${parsed.title.slice(0, 50)} (Web Page)` : urlStr,
+      sourceType: parsed.pdfBase64 ? "pdf" : "link",
+      fileName: parsed.pdfBase64
+        ? pdfFileName || "linked-document.pdf"
+        : parsed.title ? `${parsed.title.slice(0, 50)} (Web Page)` : urlStr,
       text: fullText,
       hiddenText: parsed.hiddenText,
       fileSignals: [],
       scripts,
-      metadata: {},
+      metadata: parsed.metadata || {},
       emails,
+      pdfBase64: parsed.pdfBase64,
+      pdfPageCount: parsed.pdfPageCount,
     };
 
     return NextResponse.json({ signDoc });

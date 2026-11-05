@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
 
     const contextText = dealContext && !dealContext.skipped
       ? `\n\nUSER CONTEXT:\nParty: ${dealContext.party || "not specified"}\nUser role: ${dealContext.role || "not specified"}\nDeal type: ${dealContext.dealType || "not specified"}\nWhat is happening: ${dealContext.transaction || "not specified"}\nRough value: ${dealContext.roughValue || "not specified"}\nRelationship: ${dealContext.relationship || "not specified"}\nOther details: ${dealContext.other || "none"}`
-      : "\n\nUSER CONTEXT: The user skipped context questions. Use the document's best-supported interpretation, and do not treat ordinary terms as risks without evidence that they are unusual or one-sided.";
+      : "\n\nUSER CONTEXT: No extra deal context was supplied. Use the document's best-supported interpretation, and do not treat ordinary terms as risks without evidence that they are unusual or one-sided.";
 
     // 2. Build Criteria
     const redFlagsCriteria: Record<string, string> = {};

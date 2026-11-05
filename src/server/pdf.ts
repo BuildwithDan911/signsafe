@@ -4,6 +4,7 @@ export interface PdfParseResult {
   text: string;
   metadata: DocMetadata;
   pdfBase64: string;
+  pageCount: number;
 }
 
 export async function parsePdf(buffer: Buffer): Promise<PdfParseResult> {
@@ -29,6 +30,7 @@ export async function parsePdf(buffer: Buffer): Promise<PdfParseResult> {
       text: (textRes.text || "").trim(),
       metadata,
       pdfBase64,
+      pageCount: infoRes.pages?.length || 0,
     };
   } catch (err: any) {
     // Basic fallback if PDF parsing fails
@@ -36,6 +38,7 @@ export async function parsePdf(buffer: Buffer): Promise<PdfParseResult> {
       text: "",
       metadata: {},
       pdfBase64,
+      pageCount: 0,
     };
   }
 }
