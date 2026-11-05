@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import * as fs from "fs";
 import * as path from "path";
 import { NextRequest } from "next/server";
@@ -9,6 +9,7 @@ import {
   cleanClauseText,
   extractClauseNumber,
 } from "../src/lib/compare";
+import { resetRateLimit } from "../src/server/store";
 import { POST } from "../src/app/api/check/compare/route";
 
 // Mock Clocked so Phase 9 tests run offline without live credentials.
@@ -146,6 +147,9 @@ describe("Phase 9: What changed with Compare, local diff and Decide", () => {
   });
 
   describe("2. Full Compare Endpoint Integration (/api/check/compare)", () => {
+    beforeEach(() => {
+      resetRateLimit("127.0.0.1");
+    });
     it(
       "calls compare and decide on tenancy v1 vs v2, flags clauses 3, 4, 5, 8 as worse for you, and reports nothing for 1, 2, 6, 7",
       async () => {
