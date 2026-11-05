@@ -3,13 +3,17 @@ import { callClocked } from "@/server/clocked";
 import { ScriptItem } from "@/lib/types";
 import { formatApiError } from "@/server/errors";
 import { splitForClocked } from "@/lib/chunking";
+import { validateBody, InspectSchema } from "@/lib/validation";
 
 export const maxDuration = 60;
+export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const scripts: ScriptItem[] = body.scripts || [];
+    const validation = validateBody(InspectSchema, body);
+    if ("error" in validation) return validation.error;
+    const { scripts } = validation.data;
 
     if (!scripts || scripts.length === 0) {
       return NextResponse.json({
@@ -20,14 +24,14 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const results: any[] = [];
+    const results: Array<{ origin: string; code: string; verdict: string; malicious: boolean; suspicious: boolean; category?: unknown; severity?: unknown; evidence: unknown[]; sectionsChecked: number }> = [];
     let totalCredits = 0;
     let totalModelMs = 0;
     let allCached = true;
 
     for (const item of scripts) {
       const chunks = splitForClocked(item.code || "");
-      const scriptResults = [];
+      const scriptResults: Array<{ data: { verdict: string; malicious?: boolean; suspicious?: boolean; category?: unknown; severity?: unknown; evidence?: unknown[] } }> = [];
       for (const chunk of chunks) {
         const res = await callClocked("script", { script: chunk.text, evidence: true });
         scriptResults.push(res);

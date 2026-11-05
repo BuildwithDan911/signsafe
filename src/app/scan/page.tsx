@@ -926,12 +926,15 @@ export default function ScanPage() {
         "signsafe_judge_mode",
         JSON.stringify({
           sampleId: sample.id,
-          recordedAt: sample.fixture.recordedAt,
-          totalCredits: sample.fixture.totalCredits,
+          recordedAt: (sample.fixture as { recordedAt: string }).recordedAt,
+          totalCredits: (sample.fixture as { totalCredits: number }).totalCredits,
         })
       );
-      sessionStorage.setItem("signsafe_fixture", JSON.stringify(sample.fixture));
-      sessionStorage.setItem("signsafe_doc", JSON.stringify(sample.fixture.doc));
+      sessionStorage.setItem("signsafe_fixture", JSON.stringify(sample.fixture as unknown));
+      sessionStorage.setItem(
+        "signsafe_doc",
+        JSON.stringify((sample.fixture as { doc: unknown }).doc)
+      );
       sessionStorage.removeItem("signsafe_audit");
       window.location.reload();
     }

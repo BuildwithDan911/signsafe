@@ -8,15 +8,15 @@ interface ShareDealModalProps {
   onClose: () => void;
   anonymizedText: string;
   cleanText?: string;
-  protectEntities?: any[];
-  fairClauses?: any[];
-  flags?: any[];
-  scoreResult?: any;
-  checksRun?: any[];
+  protectEntities?: unknown[];
+  fairClauses?: unknown[];
+  flags?: unknown[];
+  scoreResult?: unknown;
+  checksRun?: unknown[];
   totalCredits?: number;
   docType?: string;
   fileName?: string;
-  brokenPromises?: any[];
+  brokenPromises?: unknown[];
 }
 
 export function ShareDealModal({

@@ -10,7 +10,7 @@ export interface JudgeSampleOption {
   description: string;
   highlights: string[];
   destination: "/scan" | "/changes";
-  fixture: any;
+  fixture: unknown;
 }
 
 export const JUDGE_SAMPLES: JudgeSampleOption[] = [

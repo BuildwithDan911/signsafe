@@ -22,25 +22,25 @@ export default function JudgeModeModal({ isOpen, onClose }: JudgeModeModalProps)
         "signsafe_judge_mode",
         JSON.stringify({
           sampleId: sample.id,
-          recordedAt: sample.fixture.recordedAt,
-          totalCredits: sample.fixture.totalCredits,
+          recordedAt: (sample.fixture as { recordedAt: string }).recordedAt,
+          totalCredits: (sample.fixture as { totalCredits: number }).totalCredits,
         })
       );
-      sessionStorage.setItem("signsafe_fixture", JSON.stringify(sample.fixture));
+      sessionStorage.setItem("signsafe_fixture", JSON.stringify(sample.fixture as unknown));
 
       if (sample.destination === "/changes") {
-        sessionStorage.setItem("signsafe_changes", JSON.stringify(sample.fixture.compare));
+        sessionStorage.setItem("signsafe_changes",          JSON.stringify((sample.fixture as { compare: unknown }).compare));
         sessionStorage.setItem(
           "signsafe_doc_v1",
-          JSON.stringify({ fileName: "04_tenancy_v1.md", text: sample.fixture.text1 })
+          JSON.stringify({ fileName: "04_tenancy_v1.md", text: (sample.fixture as { text1: string }).text1 })
         );
         sessionStorage.setItem(
           "signsafe_doc_v2",
-          JSON.stringify({ fileName: "04_tenancy_v2.md", text: sample.fixture.text2 })
+          JSON.stringify({ fileName: "04_tenancy_v2.md", text: (sample.fixture as { text2: string }).text2 })
         );
         router.push("/changes");
       } else {
-        sessionStorage.setItem("signsafe_doc", JSON.stringify(sample.fixture.doc));
+        sessionStorage.setItem("signsafe_doc",          JSON.stringify((sample.fixture as { doc: unknown }).doc));
         // Remove any previous audit so scan plays fresh
         sessionStorage.removeItem("signsafe_audit");
         router.push("/scan");

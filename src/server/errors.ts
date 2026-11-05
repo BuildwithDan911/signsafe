@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
-export function formatApiError(err: any): { response: NextResponse; status: number } {
-  const msg = err?.message || String(err) || "Unknown error";
+export function formatApiError(err: unknown): { response: NextResponse; status: number } {
+  const msg = err instanceof Error ? err.message : String(err) || "Unknown error";
   let status = 500;
   let clientMessage = msg;
 

@@ -1,17 +1,41 @@
 import { NextRequest, NextResponse } from "next/server";
 import { callClocked } from "@/server/clocked";
 import { formatApiError } from "@/server/errors";
+import { checkRateLimit } from "@/server/store";
 import { splitForClocked, sumChunkCredits } from "@/lib/chunking";
+import { validateBody, TextBodySchema } from "@/lib/validation";
 
 export const maxDuration = 60;
+export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {
+    const forwarded = req.headers.get("x-forwarded-for");
+    const ip = (
+      forwarded
+        ? forwarded.split(",")[0].trim()
+        : req.headers.get("x-real-ip") || "127.0.0.1"
+    ).trim();
+    const rl = await checkRateLimit(ip);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        {
+          error:
+            "Rate limit reached: at most 5 live checks per hour. You can view Judge Mode to explore recorded runs.",
+          code: 429,
+          resetSeconds: rl.resetSeconds,
+        },
+        { status: 429 }
+      );
+    }
+
     const body = await req.json();
-    const text: string = body.cleanText || body.text || "";
+    const validation = validateBody(TextBodySchema, body);
+    if ("error" in validation) return validation.error;
+    const text: string = validation.data.cleanText || validation.data.text || "";
     const chunks = splitForClocked(text);
 
-    const fieldsSchema: Record<string, any> = {
+    const fieldsSchema: Record<string, unknown> = {
       issuer_name: "the organisation the document claims to come from",
       issuer_registration_number: "company registration or business number",
       issuer_address: "official or registered address of the issuer",
@@ -76,7 +100,7 @@ export async function POST(req: NextRequest) {
     const responses = await Promise.all(chunks.map((chunk) =>
       callClocked("extract", { text: chunk.text, fields: fieldsSchema })
     ));
-    const formattedFields: Record<string, any> = {};
+    const formattedFields: Record<string, unknown> = {};
 
     for (const key of Object.keys(fieldsSchema)) {
       const matches = responses.flatMap((response, index) => {
@@ -84,10 +108,10 @@ export async function POST(req: NextRequest) {
         if (!field) return [];
         return [{ field, offset: chunks[index].start }];
       });
-      const isList = typeof fieldsSchema[key] === "object" && fieldsSchema[key].list;
+      const isList = typeof fieldsSchema[key] === "object" && fieldsSchema[key] !== null && (fieldsSchema[key] as { list?: boolean }).list;
       if (isList) {
-        const values: any[] = [];
-        const items: any[] = [];
+        const values: unknown[] = [];
+        const items: unknown[] = [];
         for (const { field, offset } of matches) {
           const sourceValues = Array.isArray(field.value) ? field.value : field.value == null ? [] : [field.value];
           for (const value of sourceValues) {
@@ -102,9 +126,9 @@ export async function POST(req: NextRequest) {
             });
           }
         }
-        formattedFields[key] = { value: values.length ? values : null, start: items[0]?.start, end: items[0]?.end, items };
+        formattedFields[key] = { value: values.length ? values : null, start: (items[0] as { start?: number })?.start, end: (items[0] as { end?: number })?.end, items };
       } else {
-        const { field, offset } = matches.find(({ field }) => field.value != null) || matches[0] || { field: {}, offset: 0 };
+        const { field, offset } = matches.find(({ field }) => field.value != null) || matches[0] || { field: {} as { start?: number; end?: number; confidence?: number }, offset: 0 };
         formattedFields[key] = {
           value: field.value ?? null,
           start: typeof field.start === "number" ? field.start + offset : field.start,
@@ -120,7 +144,7 @@ export async function POST(req: NextRequest) {
       sectionsChecked: chunks.length,
       meta: chunks.length > 1 ? sumChunkCredits(responses) : responses[0].meta,
     });
-  } catch (err: any) {
+  } catch (err) {
     return formatApiError(err).response;
   }
 }

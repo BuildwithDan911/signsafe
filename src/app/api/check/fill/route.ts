@@ -3,9 +3,12 @@ import { callClocked, ClockedResponse } from "@/server/clocked";
 import signalsData from "@/data/signals.json";
 import { SignalDef, SIGNALS_MAP } from "@/lib/signals";
 import { formatApiError } from "@/server/errors";
+import { checkRateLimit } from "@/server/store";
 import { splitForClocked, sumChunkCredits } from "@/lib/chunking";
+import { validateBody, FillSchema } from "@/lib/validation";
 
 export const maxDuration = 60;
+export const runtime = "nodejs";
 
 interface FlagInput {
   id: string;
@@ -26,13 +29,32 @@ interface ClarificationFlagInput {
 
 export async function POST(req: NextRequest) {
   try {
+    const forwarded = req.headers.get("x-forwarded-for");
+    const ip = (
+      forwarded
+        ? forwarded.split(",")[0].trim()
+        : req.headers.get("x-real-ip") || "127.0.0.1"
+    ).trim();
+    const rl = await checkRateLimit(ip);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        {
+          error:
+            "Rate limit reached: at most 5 live checks per hour. You can view Judge Mode to explore recorded runs.",
+          code: 429,
+          resetSeconds: rl.resetSeconds,
+        },
+        { status: 429 }
+      );
+    }
+
     const body = await req.json();
-    const { cleanText = "", flags = [], clarificationFlags = [] } = body as {
-      cleanText?: string;
-      flags?: FlagInput[];
-      clarificationFlags?: ClarificationFlagInput[];
-    };
-    const dealContext = body.dealContext || {};
+    const validation = validateBody(FillSchema, body);
+    if ("error" in validation) return validation.error;
+    const cleanText: string = validation.data.cleanText ?? "";
+    const flags: FlagInput[] = (validation.data.flags ?? []) as FlagInput[];
+    const clarificationFlags: ClarificationFlagInput[] = (validation.data.clarificationFlags ?? []) as ClarificationFlagInput[];
+    const dealContext = validation.data.dealContext || {};
     const contextLabel = dealContext.skipped
       ? `No extra user-side context was supplied. The document is classified as ${dealContext.dealType || "a contract"}; avoid assuming which side benefits.`
       : `Context: user is ${dealContext.role || "a party"} in a ${dealContext.dealType || "contract"}; what is happening: ${dealContext.transaction || "unspecified"}; relationship: ${dealContext.relationship || "unspecified"}. Explain why this term matters to this user in one plain sentence.`;
@@ -51,7 +73,7 @@ export async function POST(req: NextRequest) {
     const sortedClarificationFlags: ClarificationFlagInput[] = [...clarificationFlags]
       .sort((a, b) => (b.weight ?? 0) - (a.weight ?? 0))
       .slice(0, 3);
-    const fields: Record<string, any> = {};
+    const fields: Record<string, unknown> = {};
 
     sortedFlags.forEach((flag, i) => {
       const def = SIGNALS_MAP[flag.id] as SignalDef | undefined;

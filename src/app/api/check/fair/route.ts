@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { callClocked } from "@/server/clocked";
+import { callClocked, ClockedResponse } from "@/server/clocked";
 import { formatApiError } from "@/server/errors";
+import { checkRateLimit } from "@/server/store";
+import { validateBody, FairSchema } from "@/lib/validation";
 
 export const maxDuration = 60;
+export const runtime = "nodejs";
 
 interface QuoteItem {
   id?: string;
@@ -12,16 +15,33 @@ interface QuoteItem {
 
 export async function POST(req: NextRequest) {
   try {
+    const forwarded = req.headers.get("x-forwarded-for");
+    const ip = (
+      forwarded
+        ? forwarded.split(",")[0].trim()
+        : req.headers.get("x-real-ip") || "127.0.0.1"
+    ).trim();
+    const rl = await checkRateLimit(ip);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        {
+          error:
+            "Rate limit reached: at most 5 live checks per hour. You can view Judge Mode to explore recorded runs.",
+          code: 429,
+          resetSeconds: rl.resetSeconds,
+        },
+        { status: 429 }
+      );
+    }
+
     const body = await req.json();
+    const validation = validateBody(FairSchema, body);
+    if ("error" in validation) return validation.error;
     const {
       quotes = [],
       facts = {},
       cleanText = "",
-    }: {
-      quotes: QuoteItem[];
-      facts: Record<string, any>;
-      cleanText?: string;
-    } = body;
+    } = validation.data;
 
     // Filter to at most 6 valid quotes
     const targetQuotes = quotes
@@ -38,7 +58,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 1. Build Fill fields to rewrite clauses (one generate field per quote, max 400 tokens)
-    const fillFields: Record<string, any> = {};
+    const fillFields: Record<string, unknown> = {};
 
     targetQuotes.forEach((q, idx) => {
       fillFields[`fair_${idx}`] = {
@@ -98,7 +118,7 @@ export async function POST(req: NextRequest) {
 
     let allFactsKept = true;
     const unsupportedFacts: string[] = [];
-    let groundingRes: any = null;
+    let groundingRes: ClockedResponse | null = null;
 
     if (factClaims.length > 0 && rewrittenJoined.length > 10) {
       try {

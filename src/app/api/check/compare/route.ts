@@ -3,6 +3,7 @@ import { callClocked } from "@/server/clocked";
 import { checkRateLimit } from "@/server/store";
 import { formatApiError } from "@/server/errors";
 import { isClearlyUnrelatedText, NON_CONTRACT_MESSAGE } from "@/lib/document-kind";
+import { validateBody, CompareSchema } from "@/lib/validation";
 import {
   alignClauses,
   MeaningChange,
@@ -11,6 +12,7 @@ import {
 } from "@/lib/compare";
 
 export const maxDuration = 60;
+export const runtime = "nodejs";
 
 interface CompareApiResponse {
   model?: string;
@@ -20,7 +22,7 @@ interface CompareApiResponse {
     b: string;
     relation: string;
     related?: number;
-    duplicates?: Array<any>;
+    duplicates?: unknown[];
     conflicts?: Array<{
       kind?: string;
       confidence?: number;
@@ -48,30 +50,29 @@ interface DecideApiResponse {
 
 export async function POST(req: NextRequest) {
   try {
-    const skipRateLimit = req.headers.get("x-skip-ratelimit");
-    if (!skipRateLimit) {
-      const forwarded = req.headers.get("x-forwarded-for");
-      const ip = (
-        forwarded
-          ? forwarded.split(",")[0].trim()
-          : req.headers.get("x-real-ip") || "127.0.0.1"
-      ).trim();
-      const rl = await checkRateLimit(ip);
-      if (!rl.allowed) {
-        return NextResponse.json(
-          {
-            error:
-              "Rate limit reached: at most 5 live checks per hour. You can view Judge Mode to explore recorded runs.",
-            code: 429,
-            resetSeconds: rl.resetSeconds,
-          },
-          { status: 429 }
-        );
-      }
+    const forwarded = req.headers.get("x-forwarded-for");
+    const ip = (
+      forwarded
+        ? forwarded.split(",")[0].trim()
+        : req.headers.get("x-real-ip") || "127.0.0.1"
+    ).trim();
+    const rl = await checkRateLimit(ip);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        {
+          error:
+            "Rate limit reached: at most 5 live checks per hour. You can view Judge Mode to explore recorded runs.",
+          code: 429,
+          resetSeconds: rl.resetSeconds,
+        },
+        { status: 429 }
+      );
     }
 
     const body = await req.json();
-    const { text1, text2 } = body;
+    const validation = validateBody(CompareSchema, body);
+    if ("error" in validation) return validation.error;
+    const { text1, text2 } = validation.data;
 
     if (!text1 || !text2 || typeof text1 !== "string" || typeof text2 !== "string") {
       return NextResponse.json(
@@ -95,7 +96,7 @@ export async function POST(req: NextRequest) {
     let totalCredits = 0;
     let allCached = true;
     let meaningUnavailable = false;
-    let compareRes: { data: CompareApiResponse; meta: any } | null = null;
+    let compareRes: { data: CompareApiResponse; meta: unknown } | null = null;
 
     // 2. Call Clocked Compare API
     try {
@@ -113,8 +114,8 @@ export async function POST(req: NextRequest) {
         totalCredits += compareRes.meta?.credits || 0;
         if (!compareRes.meta?.cached) allCached = false;
       }
-    } catch (err: any) {
-      console.warn("Clocked Compare API call failed, falling back to local diff:", err.message);
+    } catch (err) {
+      console.warn("Clocked Compare API call failed, falling back to local diff:", err);
       meaningUnavailable = true;
       allCached = false;
     }
@@ -198,7 +199,7 @@ export async function POST(req: NextRequest) {
         text: `Before: ${chg.beforeText}\nAfter: ${chg.afterText}`,
       }));
 
-      const decideQuestions: Record<string, any> = {};
+      const decideQuestions: Record<string, unknown> = {};
       decideDocs.forEach((doc) => {
         decideQuestions[doc.id] = {
           type: "choice",
@@ -240,8 +241,8 @@ export async function POST(req: NextRequest) {
             );
           }
         }
-      } catch (err: any) {
-        console.warn("Clocked Decide call failed on changes:", err.message);
+      } catch (err) {
+        console.warn("Clocked Decide call failed on changes:", err);
         // Keep default "worse" / "neutral" verdicts
       }
     }
@@ -281,7 +282,7 @@ export async function POST(req: NextRequest) {
         cached: allCached,
       },
     });
-  } catch (err: any) {
+  } catch (err) {
     console.error("Error in /api/check/compare:", err);
     return formatApiError(err).response;
   }

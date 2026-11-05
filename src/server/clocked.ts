@@ -29,7 +29,7 @@ export interface ClockedResponse<T = any> {
 }
 
 // In-process sequential queue to guarantee 1 concurrent request at a time
-let queueTail: Promise<any> = Promise.resolve();
+let queueTail: Promise<unknown> = Promise.resolve();
 
 function enqueue<T>(task: () => Promise<T>): Promise<T> {
   const result = queueTail.then(task, task);
@@ -37,17 +37,18 @@ function enqueue<T>(task: () => Promise<T>): Promise<T> {
   return result;
 }
 
-function canonicalStringify(obj: any): string {
+function canonicalStringify(obj: unknown): string {
   if (obj === null || typeof obj !== "object") {
     return JSON.stringify(obj);
   }
   if (Array.isArray(obj)) {
     return "[" + obj.map(canonicalStringify).join(",") + "]";
   }
-  const keys = Object.keys(obj).sort();
+  const record = obj as Record<string, unknown>;
+  const keys = Object.keys(record).sort();
   return (
     "{" +
-    keys.map((k) => JSON.stringify(k) + ":" + canonicalStringify(obj[k])).join(",") +
+    keys.map((k) => JSON.stringify(k) + ":" + canonicalStringify(record[k])).join(",") +
     "}"
   );
 }

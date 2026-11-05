@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { callClocked } from "@/server/clocked";
 import { formatApiError } from "@/server/errors";
+import { checkRateLimit } from "@/server/store";
+import { validateBody, PromisesSchema } from "@/lib/validation";
 
 export const maxDuration = 60;
+export const runtime = "nodejs";
 
 export interface PromiseItem {
   promise: string;
@@ -15,16 +18,33 @@ export interface PromiseItem {
 
 export async function POST(req: NextRequest) {
   try {
+    const forwarded = req.headers.get("x-forwarded-for");
+    const ip = (
+      forwarded
+        ? forwarded.split(",")[0].trim()
+        : req.headers.get("x-real-ip") || "127.0.0.1"
+    ).trim();
+    const rl = await checkRateLimit(ip);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        {
+          error:
+            "Rate limit reached: at most 5 live checks per hour. You can view Judge Mode to explore recorded runs.",
+          code: 429,
+          resetSeconds: rl.resetSeconds,
+        },
+        { status: 429 }
+      );
+    }
+
     const body = await req.json();
+    const validation = validateBody(PromisesSchema, body);
+    if ("error" in validation) return validation.error;
     const {
       cleanText = "",
       chatText = "",
       images = [],
-    }: {
-      cleanText: string;
-      chatText?: string;
-      images?: string[];
-    } = body;
+    }: { cleanText: string; chatText?: string; images?: string[] } = validation.data;
 
     if (!cleanText.trim()) {
       return NextResponse.json(
@@ -131,7 +151,7 @@ export async function POST(req: NextRequest) {
 
     if (Array.isArray(rawPromises)) {
       extractedPromises = rawPromises
-        .map((p: any) => (typeof p === "string" ? p : p?.value || p?.text || ""))
+        .map((p: { value?: string; text?: string }) => (typeof p === "string" ? p : p?.value || p?.text || ""))
         .map((s: string) => s.trim())
         .filter((s: string) => s.length > 0);
     } else if (typeof rawPromises === "string" && rawPromises.trim()) {
@@ -163,11 +183,11 @@ export async function POST(req: NextRequest) {
     totalCredits += groundRes.meta.credits;
     totalModelMs += groundRes.meta.modelMs;
 
-    const returnedClaims: any[] = groundRes.data?.claims || [];
+    const returnedClaims: unknown[] = groundRes.data?.claims || [];
 
     const items: PromiseItem[] = (
       returnedClaims.length > 0 ? returnedClaims : claims.map((c) => ({ claim: c }))
-    ).map((c: any, idx: number) => {
+    ).map((c: { claim?: string; verdict?: string; supported?: number; contradicted?: number; not_stated?: number }, idx: number) => {
       const claimText = c.claim || claims[idx] || "";
       const verdict = c.verdict;
       const sup = c.supported ?? 0;
@@ -230,7 +250,7 @@ export async function POST(req: NextRequest) {
         cached: fillRes.meta.cached && groundRes.meta.cached,
       },
     });
-  } catch (err: any) {
+  } catch (err) {
     console.error("Promise vs paper error:", err);
     return formatApiError(err).response;
   }

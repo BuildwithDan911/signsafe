@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Newsreader, Inter } from "next/font/google";
 import "./globals.css";
+import "@/lib/env";
 
 const newsreader = Newsreader({
   subsets: ["latin"],

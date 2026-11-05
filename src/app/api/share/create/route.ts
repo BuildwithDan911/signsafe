@@ -8,13 +8,37 @@ import {
   ShareRecord,
 } from "@/server/share";
 import { storeSet } from "@/server/store";
+import { checkRateLimit } from "@/server/store";
 import { formatApiError } from "@/server/errors";
+import { validateBody, ShareCreateSchema } from "@/lib/validation";
 
 export const maxDuration = 60;
+export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {
+    const forwarded = req.headers.get("x-forwarded-for");
+    const ip = (
+      forwarded
+        ? forwarded.split(",")[0].trim()
+        : req.headers.get("x-real-ip") || "127.0.0.1"
+    ).trim();
+    const rl = await checkRateLimit(ip);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        {
+          error:
+            "Rate limit reached: at most 5 live checks per hour. You can view Judge Mode to explore recorded runs.",
+          code: 429,
+          resetSeconds: rl.resetSeconds,
+        },
+        { status: 429 }
+      );
+    }
+
     const body = await req.json();
+    const validation = validateBody(ShareCreateSchema, body);
+    if ("error" in validation) return validation.error;
     const {
       anonymizedText = "",
       cleanText = "",
@@ -34,7 +58,7 @@ export async function POST(req: NextRequest) {
       docType = "contract",
       fileName = "document",
       brokenPromises = [],
-    } = body;
+    } = validation.data;
 
     // Security rule 4: NEVER store original text. Use Protect's anonymizedText
     // and scrub all entity values.
@@ -50,7 +74,7 @@ export async function POST(req: NextRequest) {
     const fixes: ProposedFix[] = [];
 
     if (Array.isArray(fairClauses) && fairClauses.length > 0) {
-      fairClauses.forEach((fc: any, idx: number) => {
+      fairClauses.forEach((fc: { originalQuote?: string; fairClause?: string; title?: string; id?: string; flagId?: string }, idx: number) => {
         if (fc.originalQuote || fc.fairClause) {
           fixes.push({
             id: fc.id || `fix_${idx + 1}`,
@@ -70,7 +94,7 @@ export async function POST(req: NextRequest) {
     // If no fixes were explicitly passed from fairClauses, construct fixes from broken promises or known flags
     if (fixes.length === 0) {
       if (Array.isArray(brokenPromises) && brokenPromises.length > 0) {
-        brokenPromises.forEach((bp: any, idx: number) => {
+        brokenPromises.forEach((bp: { promise?: string; contractQuote?: string }, idx: number) => {
           fixes.push({
             id: `promise_fix_${idx + 1}`,
             title: scrubEntityValues(`Sync promise: "${bp.promise || "Invoice terms"}"`, entities),
@@ -105,7 +129,7 @@ export async function POST(req: NextRequest) {
 
       // If still empty, check if flags have any quote
       if (fixes.length === 0 && Array.isArray(flags)) {
-        flags.slice(0, 3).forEach((f: any, idx: number) => {
+        flags.slice(0, 3).forEach((f: { title?: string; meaning?: string; askThem?: string; verifyYourself?: string; id?: string }, idx: number) => {
           fixes.push({
             id: `flag_fix_${idx + 1}`,
             title: scrubEntityValues(f.title || `Clarification ${idx + 1}`, entities),
@@ -121,7 +145,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Clean score breakdown
-    const scrubbedBreakdown = (scoreResult.breakdown || []).map((b: any) => ({
+    const scrubbedBreakdown = (scoreResult.breakdown || []).map((b: { reason?: string; points?: number }) => ({
       reason: scrubEntityValues(b.reason, entities),
       points: b.points,
     }));
@@ -145,9 +169,9 @@ export async function POST(req: NextRequest) {
         totalPoints: initialPoints,
         breakdown: scrubbedBreakdown,
       },
-      checksRun: (checksRun || []).map((c: any) => ({
-        step: c.step,
-        name: scrubEntityValues(c.name, entities),
+      checksRun: (checksRun || []).map((c: { step?: string; name?: string; credits?: number; cached?: boolean }) => ({
+        step: c.step || "",
+        name: scrubEntityValues(c.name || "", entities),
         credits: c.credits || 0,
         cached: !!c.cached,
       })),
@@ -179,7 +203,7 @@ export async function POST(req: NextRequest) {
       expiresAt,
       docHash,
     });
-  } catch (err: any) {
+  } catch (err) {
     return formatApiError(err).response;
   }
 }

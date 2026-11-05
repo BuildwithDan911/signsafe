@@ -95,10 +95,10 @@ interface AuditData {
     entities?: Array<{ type: string; value: string }>;
   };
   extractData?: {
-    fields?: Record<string, { value: any; offsets?: any }>;
+    fields?: Record<string, { value: unknown; offsets?: unknown }>;
   };
   decideData?: {
-    answers?: any;
+    answers?: unknown;
     greenSignals?: string[];
     docType?: string;
     highConfidenceIds?: string[];

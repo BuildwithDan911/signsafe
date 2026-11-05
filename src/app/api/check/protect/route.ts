@@ -1,14 +1,38 @@
 import { NextRequest, NextResponse } from "next/server";
 import { callClocked } from "@/server/clocked";
 import { formatApiError } from "@/server/errors";
+import { checkRateLimit } from "@/server/store";
 import { splitForClocked, sumChunkCredits } from "@/lib/chunking";
+import { validateBody, TextBodySchema } from "@/lib/validation";
 
 export const maxDuration = 60;
+export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {
+    const forwarded = req.headers.get("x-forwarded-for");
+    const ip = (
+      forwarded
+        ? forwarded.split(",")[0].trim()
+        : req.headers.get("x-real-ip") || "127.0.0.1"
+    ).trim();
+    const rl = await checkRateLimit(ip);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        {
+          error:
+            "Rate limit reached: at most 5 live checks per hour. You can view Judge Mode to explore recorded runs.",
+          code: 429,
+          resetSeconds: rl.resetSeconds,
+        },
+        { status: 429 }
+      );
+    }
+
     const body = await req.json();
-    const text: string = body.cleanText || body.text || "";
+    const validation = validateBody(TextBodySchema, body);
+    if ("error" in validation) return validation.error;
+    const text: string = validation.data.cleanText || validation.data.text || "";
     const chunks = splitForClocked(text);
 
     const entitiesMap: Record<string, string> = {
@@ -35,16 +59,16 @@ export async function POST(req: NextRequest) {
       })
     ));
     const rawEntities = responses.flatMap((response, index) =>
-      (response.data.entities || []).map((entity: any) => ({
+      (response.data.entities || []).map((entity: { type: string; start?: number; end?: number; value?: string; confidence?: number }) => ({
         ...entity,
         start: typeof entity.start === "number" ? entity.start + chunks[index].start : undefined,
         end: typeof entity.end === "number" ? entity.end + chunks[index].start : undefined,
       }))
     );
-    const uniqueEntities = Array.from(new Map(rawEntities.map((entity: any) =>
+    const uniqueEntities = Array.from(new Map(rawEntities.map((entity: { type: string; start?: number; end?: number; value?: string; confidence?: number }) =>
       [`${entity.type}:${entity.start}:${entity.end}:${entity.value || ""}`, entity]
     )).values());
-    const formattedEntities = uniqueEntities.map((e: any) => ({
+    const formattedEntities = uniqueEntities.map((e: { type: string; start?: number; end?: number; value?: string; confidence?: number }) => ({
       type: e.type,
       value: e.value,
       start: e.start,
@@ -53,12 +77,12 @@ export async function POST(req: NextRequest) {
     }));
 
     const totalCount = uniqueEntities.length;
-    const counts = uniqueEntities.reduce((result: Record<string, number>, entity: any) => {
+    const counts = uniqueEntities.reduce((result: Record<string, number>, entity: { type: string }) => {
       result[entity.type] = (result[entity.type] || 0) + 1;
       return result;
     }, {});
     let anonymizedText = text;
-    for (const entity of [...uniqueEntities].sort((a: any, b: any) => (b.start ?? 0) - (a.start ?? 0)) as any[]) {
+    for (const entity of [...uniqueEntities].sort((a: { start?: number }, b: { start?: number }) => (b.start ?? 0) - (a.start ?? 0))) {
       if (typeof entity.start === "number" && typeof entity.end === "number" && entity.start >= 0 && entity.end <= anonymizedText.length) {
         anonymizedText = anonymizedText.slice(0, entity.start) + `[${String(entity.type).toUpperCase()}]` + anonymizedText.slice(entity.end);
       } else if (entity.value) {
@@ -74,7 +98,7 @@ export async function POST(req: NextRequest) {
       sectionsChecked: chunks.length,
       meta: chunks.length > 1 ? sumChunkCredits(responses) : responses[0].meta,
     });
-  } catch (err: any) {
+  } catch (err) {
     return formatApiError(err).response;
   }
 }

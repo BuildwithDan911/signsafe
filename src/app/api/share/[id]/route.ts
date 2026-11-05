@@ -4,8 +4,10 @@ import { storeGet, storeSet } from "@/server/store";
 import { computeScore } from "@/lib/score";
 import { callClocked } from "@/server/clocked";
 import { formatApiError } from "@/server/errors";
+import { validateBody, SharePatchSchema } from "@/lib/validation";
 
 export const maxDuration = 60;
+export const runtime = "nodejs";
 
 interface RouteProps {
   params: Promise<{ id: string }>;
@@ -38,7 +40,7 @@ export async function GET(req: NextRequest, { params }: RouteProps) {
       share,
       currentRole: role,
     });
-  } catch (err: any) {
+  } catch (err) {
     return formatApiError(err).response;
   }
 }
@@ -47,7 +49,9 @@ export async function PATCH(req: NextRequest, { params }: RouteProps) {
   try {
     const { id } = await params;
     const body = await req.json();
-    const { token, fixId, accepted } = body;
+    const validation = validateBody(SharePatchSchema, body);
+    if ("error" in validation) return validation.error;
+    const { token, fixId, accepted } = validation.data;
 
     const role = verifyRoleToken(id, token);
     if (!role) {
@@ -175,7 +179,7 @@ export async function PATCH(req: NextRequest, { params }: RouteProps) {
       share,
       currentRole: role,
     });
-  } catch (err: any) {
+  } catch (err) {
     return formatApiError(err).response;
   }
 }

@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import * as fs from "fs";
 import * as path from "path";
 import { NextRequest } from "next/server";
@@ -9,7 +9,70 @@ import {
   cleanClauseText,
   extractClauseNumber,
 } from "../src/lib/compare";
+import { resetRateLimit } from "../src/server/store";
 import { POST } from "../src/app/api/check/compare/route";
+
+// Mock Clocked so Phase 9 tests run offline without live credentials.
+const seen = new Set<string>();
+vi.mock("../src/server/clocked", () => ({
+  callClocked: vi.fn(async (_endpoint: string, body: any) => {
+    const key = JSON.stringify({ endpoint: _endpoint, body });
+    const wasSeen = seen.has(key);
+    seen.add(key);
+
+    if (_endpoint === "compare") {
+      return {
+        data: {
+          pairs: [
+            {
+              relation: "different",
+              conflicts: [
+                {
+                  kind: "meaning_change",
+                  confidence: 0.9,
+                  a: { quote: "ends at the end of the Term unless both parties agree" },
+                  b: { quote: "renews automatically for further 12-month terms" },
+                },
+                {
+                  kind: "meaning_change",
+                  confidence: 0.9,
+                  a: { quote: "Rent is fixed for the Term. Any increase on renewal requires 3 months' written notice." },
+                  b: { quote: "The Landlord may review the rent at any time on 14 days' notice." },
+                },
+                {
+                  kind: "meaning_change",
+                  confidence: 0.9,
+                  a: { quote: "refundable within 14 days of move-out" },
+                  b: { quote: "non-refundable administrative fee" },
+                },
+                {
+                  kind: "meaning_change",
+                  confidence: 0.9,
+                  a: { quote: "Lagos State Rent Tribunal or a court of competent jurisdiction." },
+                  b: { quote: "binding arbitration before an arbitrator nominated by the Landlord" },
+                },
+              ],
+            }],
+        },
+        meta: { credits: 0, modelMs: 0, cached: wasSeen },
+      };
+    }
+    if (_endpoint === "decide") {
+      return {
+        data: {
+          answers: Object.fromEntries(
+            Object.keys(body.questions || {}).map((docId: string) => [
+              docId,
+              { choice: "worse", probabilities: { worse: 0.9, neutral: 0.05, better: 0.05 } },
+            ])
+          ),
+        },
+        meta: { credits: 0, modelMs: 0, cached: wasSeen },
+      };
+    }
+    return { data: {}, meta: { credits: 0, modelMs: 0, cached: false } };
+  }),
+}));
 
 describe("Phase 9: What changed with Compare, local diff and Decide", () => {
   const v1Text = fs.readFileSync(
@@ -84,6 +147,9 @@ describe("Phase 9: What changed with Compare, local diff and Decide", () => {
   });
 
   describe("2. Full Compare Endpoint Integration (/api/check/compare)", () => {
+    beforeEach(() => {
+      resetRateLimit("127.0.0.1");
+    });
     it(
       "calls compare and decide on tenancy v1 vs v2, flags clauses 3, 4, 5, 8 as worse for you, and reports nothing for 1, 2, 6, 7",
       async () => {
