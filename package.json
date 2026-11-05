@@ -27,7 +27,6 @@
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "tesseract.js": "^5.1.1",
-    "unpdf": "^0.2.1",
     "pdfjs-dist": "5.4.296"
   },
   "devDependencies": {
