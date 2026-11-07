@@ -119,8 +119,8 @@ export const VerifyExplanationsSchema = z.object({
     .array(
       z.object({
         flagId: z.string(),
-        why: z.string(),
-        quote: z.string().optional(),
+        why: z.string().nullish().default(""),
+        quote: z.string().nullish(),
       })
     )
     .optional(),
