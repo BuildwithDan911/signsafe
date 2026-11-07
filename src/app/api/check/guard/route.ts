@@ -71,12 +71,13 @@ export async function POST(req: NextRequest) {
         ? forwarded.split(",")[0].trim()
         : req.headers.get("x-real-ip") || "127.0.0.1"
     ).trim();
-    const rl = await checkRateLimit(ip);
+    const limit = parseInt(process.env.RATE_LIMIT_CHECKS_PER_HOUR || "20", 10);
+    const rl = await checkRateLimit(ip, limit, 3600, "ratelimit:check:");
     if (!rl.allowed) {
       return NextResponse.json(
         {
           error:
-            "Rate limit reached: at most 5 live checks per hour. You can view Judge Mode to explore recorded runs.",
+            `Rate limit reached: at most ${limit} live checks per hour. You can view Judge Mode to explore recorded runs, or click Reset below.`,
           code: 429,
           resetSeconds: rl.resetSeconds,
         },

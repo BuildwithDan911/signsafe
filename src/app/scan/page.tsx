@@ -299,15 +299,22 @@ export default function ScanPage() {
         if (
           data.error?.includes("paused") ||
           data.error?.includes("credits") ||
-          data.error?.includes("Mock")
+          data.error?.includes("Mock") ||
+          data.error?.includes("Rate limit") ||
+          res.status === 429
         ) {
           setSystemAlert(data.error);
         }
         updateStep("guard", {
           status: "error",
           error: data.error || "Guard check failed",
-          summary: "Hidden-trick check unavailable",
+          summary: data.error?.includes("Rate limit") || res.status === 429
+            ? "Rate limit reached"
+            : "Hidden-trick check unavailable",
         });
+        if (res.status === 429 || data.error?.includes("Rate limit")) {
+          return;
+        }
       } else {
         const credits = data.meta?.credits || 0;
         const cached = !!data.meta?.cached;
@@ -955,6 +962,44 @@ export default function ScanPage() {
           summary: "Redaction unavailable",
         });
       }
+    } else if (stepId === "verify") {
+      try {
+        const verifyRes = await fetch("/api/check/verify-explanations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            cleanText: cleanText || doc.text,
+            items: fillItems.length > 0 ? fillItems : (fillData?.items || []),
+          }),
+        });
+        const verifyDataRes = await verifyRes.json();
+        if (verifyRes.ok) {
+          const verifyCredits = verifyDataRes.meta?.credits || 0;
+          const verifyCached = !!verifyDataRes.meta?.cached;
+          setTotalCredits((prev) => prev + verifyCredits);
+          setVerifiedItems(verifyDataRes.verifiedItems || []);
+          setVerifyData(verifyDataRes);
+          const verifiedCount = (verifyDataRes.verifiedItems || []).filter((v: any) => v.verified).length;
+          updateStep("verify", {
+            status: "done",
+            credits: verifyCredits,
+            cached: verifyCached,
+            summary: `Double-checked explanations (${verifiedCount} verified against text ✓)`,
+          });
+        } else {
+          updateStep("verify", {
+            status: "error",
+            error: verifyDataRes.error,
+            summary: "Explanation verification skipped",
+          });
+        }
+      } catch (err: any) {
+        updateStep("verify", {
+          status: "error",
+          error: err.message,
+          summary: "Explanation verification skipped",
+        });
+      }
     } else {
       runPipeline(doc);
     }
@@ -1253,12 +1298,29 @@ export default function ScanPage() {
                 </p>
               </div>
             </div>
-            <button
-              onClick={handleShowClosestRecordedRun}
-              className="px-4 py-2 bg-[#14213D] hover:bg-[#14213D]/90 text-[#FBF8F1] rounded-xl text-xs sm:text-sm font-semibold transition shrink-0 cursor-pointer shadow-xs"
-            >
-              Show the recorded run instead
-            </button>
+            {systemAlert.includes("Rate limit") ? (
+              <button
+                onClick={async () => {
+                  try {
+                    await fetch("/api/check/reset-rate-limit", { method: "POST" });
+                    setSystemAlert(null);
+                    window.location.reload();
+                  } catch (e) {
+                    window.location.reload();
+                  }
+                }}
+                className="px-4 py-2 bg-[#14213D] hover:bg-[#14213D]/90 text-[#FBF8F1] rounded-xl text-xs sm:text-sm font-semibold transition shrink-0 cursor-pointer shadow-xs"
+              >
+                Reset Limit & Retry
+              </button>
+            ) : (
+              <button
+                onClick={handleShowClosestRecordedRun}
+                className="px-4 py-2 bg-[#14213D] hover:bg-[#14213D]/90 text-[#FBF8F1] rounded-xl text-xs sm:text-sm font-semibold transition shrink-0 cursor-pointer shadow-xs"
+              >
+                Show the recorded run instead
+              </button>
+            )}
           </div>
         )}
 

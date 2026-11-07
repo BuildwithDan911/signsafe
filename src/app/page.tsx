@@ -167,6 +167,8 @@ export default function HomePage() {
   };
 
   const handleFileUpload = async (file: File) => {
+    sessionStorage.removeItem("signsafe_judge_mode");
+    sessionStorage.removeItem("signsafe_fixture");
     setIsProcessing(true);
     setProcessingStatus(`Reading ${file.name}...`);
 
@@ -262,6 +264,8 @@ export default function HomePage() {
   };
 
   const handlePastedText = async () => {
+    sessionStorage.removeItem("signsafe_judge_mode");
+    sessionStorage.removeItem("signsafe_fixture");
     if (!pastedText.trim()) {
       showToast("Please enter or paste document text");
       return;
@@ -295,6 +299,8 @@ export default function HomePage() {
   };
 
   const handleLinkFetch = async () => {
+    sessionStorage.removeItem("signsafe_judge_mode");
+    sessionStorage.removeItem("signsafe_fixture");
     if (!linkUrl.trim()) {
       showToast("Please enter a web URL to check");
       return;
@@ -326,6 +332,8 @@ export default function HomePage() {
   };
 
   const handleLoadSample = async (samplePath: string, fileName: string) => {
+    sessionStorage.removeItem("signsafe_judge_mode");
+    sessionStorage.removeItem("signsafe_fixture");
     setIsProcessing(true);
     setProcessingStatus(`Loading sample ${fileName}...`);
 
