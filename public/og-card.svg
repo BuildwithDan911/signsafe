@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <!-- Paper gradient -->
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FEFDF8" />
+      <stop offset="100%" stop-color="#FBF8F1" />
+    </linearGradient>
+
+    <!-- Seal gold gradient -->
+    <radialGradient id="sealGold" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#FDF4E5" />
+      <stop offset="60%" stop-color="#E8A33D" />
+      <stop offset="100%" stop-color="#B87518" />
+    </radialGradient>
+
+    <!-- Card shadow -->
+    <filter id="cardShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="12" stdDeviation="24" flood-color="#14213D" flood-opacity="0.08" />
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#14213D" flood-opacity="0.04" />
+    </filter>
+
+    <filter id="sealShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#14213D" flood-opacity="0.2" />
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)" />
+
+  <!-- Ruled legal pad subtle background lines -->
+  <g stroke="#14213D" stroke-opacity="0.04" stroke-width="1">
+    <line x1="0" y1="90" x2="1200" y2="90" />
+    <line x1="0" y1="130" x2="1200" y2="130" />
+    <line x1="0" y1="170" x2="1200" y2="170" />
+    <line x1="0" y1="210" x2="1200" y2="210" />
+    <line x1="0" y1="250" x2="1200" y2="250" />
+    <line x1="0" y1="290" x2="1200" y2="290" />
+    <line x1="0" y1="330" x2="1200" y2="330" />
+    <line x1="0" y1="370" x2="1200" y2="370" />
+    <line x1="0" y1="410" x2="1200" y2="410" />
+    <line x1="0" y1="450" x2="1200" y2="450" />
+    <line x1="0" y1="490" x2="1200" y2="490" />
+    <line x1="0" y1="530" x2="1200" y2="530" />
+    <line x1="0" y1="570" x2="1200" y2="570" />
+  </g>
+
+  <!-- Legal pad left vertical margin line -->
+  <line x1="120" y1="0" x2="120" y2="630" stroke="#D64545" stroke-opacity="0.15" stroke-width="2" />
+
+  <!-- Centered Paper Card -->
+  <rect x="180" y="75" width="840" height="480" rx="16" fill="#FFFFFF" stroke="#14213D" stroke-opacity="0.08" stroke-width="1.5" filter="url(#cardShadow)" />
+
+  <!-- Seal inside card -->
+  <g transform="translate(600, 210) scale(1.6) translate(-50, -50)">
+    <!-- Scalloped 32-point notary outer edge -->
+    <polygon
+      filter="url(#sealShadow)"
+      fill="url(#sealGold)"
+      stroke="#B87518"
+      stroke-width="0.8"
+      points="
+        50,2 53.6,5.8 58.7,4.3 61.6,8.8 67,8.2 68.8,13.2 74.2,13.6 74.9,19 79.9,20.4 79.4,25.9 83.8,28.2 82.2,33.5 85.8,36.8 83,41.7 85.6,45.8 81.7,49.8 83.2,55.1 78.4,58 78.8,63.5 73.4,65.3 72.7,70.7 67.1,71.4 65.2,76.4 59.8,75.9 56.8,80.4 51.7,78.8 47.9,82.5 43.7,79.9 39.4,82.5 36.4,78.8 31.3,80.4 28.3,75.9 22.9,76.4 21,71.4 15.4,70.7 14.7,65.3 9.3,63.5 9.7,58 4.9,55.1 6.4,49.8 2.5,45.8 5.1,41.7 2.3,36.8 5.9,33.5 4.3,28.2 8.7,25.9 8.2,20.4 13.2,19 13.9,13.6 19.3,13.2 21.1,8.2 26.5,8.8 29.4,4.3 34.5,5.8 38.3,2 42.4,4.6
+      "
+    />
+    <circle cx="50" cy="50" r="39" fill="none" stroke="#14213D" stroke-width="0.75" stroke-dasharray="1.5,1" opacity="0.65" />
+    <circle cx="50" cy="50" r="36" fill="none" stroke="#14213D" stroke-width="0.5" opacity="0.5" />
+    <circle cx="50" cy="50" r="31" fill="#FEFDF8" stroke="#B87518" stroke-width="1.2" />
+    <!-- Shield -->
+    <path d="M50 26 L63 32 V48 C63 58 50 67 50 67 C50 67 37 58 37 48 V32 Z" fill="#2FA36B" stroke="#1E734A" stroke-width="1" />
+    <!-- Checkmark -->
+    <path d="M44 46 L48 51 L56 41" fill="none" stroke="#FBF8F1" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+
+  <!-- Typography -->
+  <text x="600" y="360" font-family="Georgia, serif" font-size="52" font-weight="bold" fill="#14213D" text-anchor="middle" letter-spacing="-0.5">
+    SignSafe
+  </text>
+  <text x="600" y="410" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="22" font-weight="600" fill="#E8A33D" text-anchor="middle" letter-spacing="0.5">
+    CHECK IT BEFORE YOU SIGN IT
+  </text>
+  <text x="600" y="455" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="18" fill="#14213D" fill-opacity="0.7" text-anchor="middle">
+    Find the traps · Ask the right questions · Get a fair version before you sign
+  </text>
+  <text x="600" y="515" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="14" font-weight="500" fill="#2FA36B" text-anchor="middle">
+    Powered by Clocked AI · 9 Safety Endpoints
+  </text>
+</svg>

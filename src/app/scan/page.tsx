@@ -25,6 +25,7 @@ import CreditCounter, { StepCreditInfo } from "@/components/CreditCounter";
 import CreditsModal from "@/components/CreditsModal";
 import { getJudgeSampleById } from "@/lib/judge";
 import { DealContext } from "@/lib/signals";
+import { isClearlyUnrelatedText } from "@/lib/document-kind";
 
 interface StepState {
   id: string;
@@ -35,6 +36,32 @@ interface StepState {
   cached: boolean;
   summary: string;
   error?: string;
+}
+
+
+function hasAgreementContext(facts: Record<string, any>, text: string): boolean {
+  const docType = String(facts.document_type?.value || "").toLowerCase();
+  const isAgreementType = /\b(agreement|contract|lease|terms|invoice|offer|loan|purchase|nda|appointment|tenancy|policy|retainer|order|employment|service)\b/i.test(docType);
+
+  const rawParties = facts.party_names?.value;
+  const hasParties = (Array.isArray(rawParties) && rawParties.length > 0) || Boolean(facts.issuer_name?.value) || Boolean(facts.signatory_name?.value);
+
+  const payments = facts.payments_you_make?.value;
+  const hasPayments = (Array.isArray(payments) && payments.length > 0) || Boolean(facts.pay_you_receive?.value) || Boolean(facts.bank_details?.value);
+
+  const hasObligations = Boolean(facts.start_date?.value) || Boolean(facts.deadline_to_sign_or_pay?.value) || Boolean(facts.term_or_end_date?.value) || Boolean(facts.notice_or_termination?.value) || Boolean(facts.governing_law?.value);
+
+  const agreementScore = (isAgreementType ? 2 : 0) + (hasParties ? 1 : 0) + (hasPayments ? 1 : 0) + (hasObligations ? 1 : 0);
+
+  if (isClearlyUnrelatedText(text) && agreementScore < 2) {
+    return false;
+  }
+
+  if (agreementScore === 0) {
+    return false;
+  }
+
+  return true;
 }
 
 function guessDealType(value: unknown): string {
@@ -79,6 +106,7 @@ export default function ScanPage() {
   // Question wizard state
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
   const [questionsDone, setQuestionsDone] = useState(false);
+  const [noAgreementTerms, setNoAgreementTerms] = useState(false);
   const [dealContext, setDealContext] = useState<DealContext | null>(null);
   const [showDealContext, setShowDealContext] = useState(false);
   const [contextGuess, setContextGuess] = useState<any>(null);
@@ -449,6 +477,30 @@ export default function ScanPage() {
         error: err.message,
         summary: "Fact extraction unavailable",
       });
+    }
+
+
+    // Option A: When Extract finds no agreement context, stop right after Extract
+    if (!hasAgreementContext(extractedFacts, currentClean)) {
+      updateStep("extract", {
+        status: "done",
+
+        summary: "No agreement or contract terms detected in document",
+      });
+      updateStep("decide", {
+        status: "skipped",
+        summary: "Skipped — no agreement terms to evaluate",
+      });
+      updateStep("fill", {
+        status: "skipped",
+        summary: "Skipped — no agreement terms to evaluate",
+      });
+      updateStep("verify", {
+        status: "skipped",
+        summary: "Skipped — no agreement terms to evaluate",
+      });
+      setNoAgreementTerms(true);
+      return;
     }
 
     const guessedType = guessDealType(extractedFacts.document_type?.value);
@@ -1367,6 +1419,42 @@ export default function ScanPage() {
           ))}
         </div>
 
+        
+        {/* OPTION A: DEDICATED SCREEN WHEN NO AGREEMENT TERMS DETECTED */}
+        {noAgreementTerms && (
+          <section className="paper-card rounded-2xl p-6 sm:p-8 bg-white border border-[#14213D]/15 shadow-md space-y-5 animate-fadeIn">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-[#E8A33D]/15 flex items-center justify-center text-[#B87518] shrink-0">
+                <FileSearch className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <h2 className="font-serif text-xl sm:text-2xl font-bold text-[#14213D]">
+                  No agreement terms detected
+                </h2>
+                <p className="text-sm font-medium text-[#14213D]/70">
+                  SignSafe only evaluates contracts, job offers, leases, and agreements.
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-xl bg-[#FBF8F1] p-4 text-xs sm:text-sm text-stone-700 leading-relaxed border border-[#14213D]/10">
+              <p>
+                Clocked Extract analyzed this document and found no contract parties, mutual obligations, financial terms, or legal clauses. To keep results trustworthy and avoid misleading verdicts, SignSafe stopped before scoring.
+              </p>
+            </div>
+
+            <div className="pt-2 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => router.push("/")}
+                className="rounded-xl bg-[#14213D] px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-[#14213D]/90 transition-all cursor-pointer"
+              >
+                Upload or paste a contract
+              </button>
+            </div>
+          </section>
+        )}
+
         {showDealContext && contextGuess && (
           <section className="paper-card rounded-2xl p-6 sm:p-8 bg-white border border-[#14213D]/12 shadow-md space-y-6" aria-labelledby="deal-context-title">
             <div className="flex items-start justify-between gap-4 border-b border-[#14213D]/10 pb-4">
@@ -1495,7 +1583,7 @@ export default function ScanPage() {
         )}
 
         {/* PIPELINE COMPLETE CTA -> GO TO RESULTS */}
-        {isPipelineComplete && (questionsDone || questionsToAsk.length === 0) && (
+        {isPipelineComplete && !noAgreementTerms && (questionsDone || questionsToAsk.length === 0) && (
           <div className="pt-4 flex justify-center animate-fadeIn">
             <button
               onClick={goToResults}

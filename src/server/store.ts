@@ -133,10 +133,11 @@ export interface RateLimitResult {
 export async function checkRateLimit(
   ip: string,
   limit: number = 5,
-  windowSeconds: number = 3600
+  windowSeconds: number = 3600,
+  keyPrefix: string = "ratelimit:check:"
 ): Promise<RateLimitResult> {
   const safeIp = ip.trim() || "127.0.0.1";
-  const key = `ratelimit:check:${safeIp}`;
+  const key = `${keyPrefix}${safeIp}`;
   const now = Date.now();
 
   if (redisClient) {
@@ -204,9 +205,12 @@ export async function checkRateLimit(
   }
 }
 
-export async function resetRateLimit(ip: string): Promise<void> {
+export async function resetRateLimit(
+  ip: string,
+  keyPrefix: string = "ratelimit:check:"
+): Promise<void> {
   const safeIp = ip.trim() || "127.0.0.1";
-  const key = `ratelimit:check:${safeIp}`;
+  const key = `${keyPrefix}${safeIp}`;
   if (redisClient) {
     try {
       await redisClient.del(key);

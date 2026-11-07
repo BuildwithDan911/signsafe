@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
         ? forwarded.split(",")[0].trim()
         : req.headers.get("x-real-ip") || "127.0.0.1"
     ).trim();
-    const rl = await checkRateLimit(ip);
+    const rl = await checkRateLimit(ip, 60, 3600, "ratelimit:step:");
     if (!rl.allowed) {
       return NextResponse.json(
         {
