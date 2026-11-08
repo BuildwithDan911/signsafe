@@ -4,7 +4,7 @@
 
 ![SignSafe Results Screen](docs/screenshots/results.png)
 
-- **Live Demo:** [https://signsafe-build-kit.vercel.app](https://signsafe-build-kit.vercel.app) *(or your Vercel deployment URL)*
+- **Live Demo:** [https://signsafe-clocked.vercel.app](https://signsafe-clocked.vercel.app/) *(or your Vercel deployment URL)*
 - **Demo Video (75s):** [YouTube / Loom placeholder: https://youtu.be/placeholder-signsafe-demo](https://youtu.be/placeholder-signsafe-demo)
 - **Built for:** Clocked Hackathon (3–10 November 2026)
 - **License:** MIT
