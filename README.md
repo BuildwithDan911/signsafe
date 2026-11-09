@@ -5,7 +5,7 @@
 ![SignSafe Results Screen](docs/screenshots/results.png)
 
 - **Live Demo:** [https://signsafe-clocked.vercel.app](https://signsafe-clocked.vercel.app)
-- **Demo Video (74s):** [YouTube / Loom placeholder: https://youtu.be/placeholder-signsafe-demo](https://youtu.be/placeholder-signsafe-demo)
+- **Demo Video (60s):** [YouTube / Loom placeholder: https://youtu.be/placeholder-signsafe-demo](https://youtu.be/placeholder-signsafe-demo)
 - **Built for:** Clocked Build Challenge (3–10 November 2026)
 - **Author:** Daniel John ([@BuildwithDan911](https://github.com/BuildwithDan911))
 - **License:** MIT
